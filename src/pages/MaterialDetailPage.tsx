@@ -9,6 +9,8 @@ const categoryLabels: Record<Material['category'], string> = {
   plastic: '塑料',
   composite: '复合材料',
   rubber: '橡胶',
+  elastomer: '弹性体',
+  acoustic: '吸隔音材料',
   ceramic: '陶瓷',
   other: '其他',
 };
@@ -99,7 +101,7 @@ export default function MaterialDetailPage() {
                       {labels[key] || key}
                     </span>
                     <span className="text-sm text-gray-900 font-semibold">
-                      {value}
+                      {typeof value === 'string' ? value : JSON.stringify(value)}
                     </span>
                   </div>
                 );

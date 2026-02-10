@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import { quizQuestions } from '../data/questions';
 
-type Question = typeof quizQuestions[number];
-
 interface QuizRecord {
   id: string;
   questionId: string;
