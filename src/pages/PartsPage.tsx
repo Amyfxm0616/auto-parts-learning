@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { parts as initialParts } from '../data/parts';
 import { partSystems as initialSystems } from '../data/systems';
 import { materials } from '../data/materials';
+import InteriorDiagram from '../components/InteriorDiagram';
 
 type Part = typeof initialParts[number];
 type PartSystem = typeof initialSystems[number];
@@ -12,6 +13,7 @@ export default function PartsPage() {
   const [systems, setSystems] = useState<PartSystem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSystem, setSelectedSystem] = useState<string>('sys-001');
+  const [selectedSubsystem, setSelectedSubsystem] = useState<string>(''); // 子系统选择
   const [selectedSubspecialty, setSelectedSubspecialty] = useState<string>('');
   const [editingPart, setEditingPart] = useState<Part | null>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -56,15 +58,41 @@ export default function PartsPage() {
     }
   }, []);
 
-  // 当切换系统时，重置子专业选择
+  // 当切换系统时，重置子系统和子专业选择
   useEffect(() => {
     const system = systems.find((s) => s.id === selectedSystem);
-    if (system && system.subspecialties && system.subspecialties.length > 0) {
-      setSelectedSubspecialty(system.subspecialties[0]);
+
+    // 如果是座舱系统，设置默认子系统为"内饰"
+    if (selectedSystem === 'sys-001') {
+      setSelectedSubsystem('内饰');
     } else {
-      setSelectedSubspecialty('');
+      setSelectedSubsystem('');
+      // 非座舱系统，使用原有逻辑
+      if (system && system.subspecialties && system.subspecialties.length > 0) {
+        setSelectedSubspecialty(system.subspecialties[0]);
+      } else {
+        setSelectedSubspecialty('');
+      }
     }
   }, [selectedSystem, systems]);
+
+  // 当切换子系统时，重置子专业选择
+  useEffect(() => {
+    if (selectedSystem === 'sys-001' && selectedSubsystem) {
+      const system = systems.find((s) => s.id === selectedSystem);
+      if (system && system.subspecialties) {
+        // 找到属于当前子系统的第一个专业
+        const subsystemSpecialties = system.subspecialties.filter((spec) =>
+          spec.startsWith(selectedSubsystem)
+        );
+        if (subsystemSpecialties.length > 0) {
+          setSelectedSubspecialty(subsystemSpecialties[0]);
+        } else {
+          setSelectedSubspecialty('');
+        }
+      }
+    }
+  }, [selectedSubsystem, selectedSystem, systems]);
 
   const saveParts = (newParts: Part[]) => {
     setParts(newParts);
@@ -256,7 +284,12 @@ export default function PartsPage() {
 
   // 获取当前系统的子专业列表
   const currentSystem = systems.find((s) => s.id === selectedSystem);
-  const subspecialties = currentSystem?.subspecialties || [];
+
+  // 如果是座舱系统，只显示当前子系统的专业
+  let subspecialties = currentSystem?.subspecialties || [];
+  if (selectedSystem === 'sys-001' && selectedSubsystem) {
+    subspecialties = subspecialties.filter((spec) => spec.startsWith(selectedSubsystem));
+  }
 
   return (
     <div className="px-4 py-8 max-w-7xl mx-auto">
@@ -503,6 +536,27 @@ export default function PartsPage() {
             <p className="text-sm text-gray-600">{currentSystem.description}</p>
           </div>
 
+          {/* Subsystem Tabs (仅座舱系统显示) */}
+          {selectedSystem === 'sys-001' && (
+            <div className="border-b border-gray-200 bg-gray-50">
+              <div className="flex px-6 overflow-x-auto">
+                {['内饰', '座椅', '灯具', '智能电器', '其他'].map((subsystem) => (
+                  <button
+                    key={subsystem}
+                    onClick={() => setSelectedSubsystem(subsystem)}
+                    className={`px-6 py-3 text-sm font-medium whitespace-nowrap ${
+                      selectedSubsystem === subsystem
+                        ? 'text-blue-600 border-b-2 border-blue-600 bg-white'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                    }`}
+                  >
+                    {subsystem}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Subspecialty Tabs with Management */}
           <div className="border-b border-gray-200 overflow-x-auto">
             <div className="flex px-6 items-center">
@@ -603,99 +657,115 @@ export default function PartsPage() {
           {/* Subspecialty Content */}
           {selectedSubspecialty && (
             <div>
-              <div className="p-6 border-b border-gray-200 flex justify-between items-center bg-gray-50">
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-900">
-                    {selectedSubspecialty}
-                  </h3>
-                  <p className="text-sm text-gray-600 mt-1">
-                    共 {getPartsBySystemAndSubspecialty(currentSystem.name, selectedSubspecialty).length} 个零部件
-                  </p>
+              {/* 如果是座舱系统的内饰专业，显示可视化示意图 */}
+              {currentSystem.id === 'sys-001' && selectedSubspecialty.startsWith('内饰') ? (
+                <div className="p-6">
+                  <InteriorDiagram
+                    parts={parts.filter(p =>
+                      p.category === currentSystem.name &&
+                      p.subcategory?.startsWith('内饰')
+                    )}
+                    onPartClick={(part) => {
+                      // 跳转到零部件详情页
+                      window.location.href = `/parts/${part.id}`;
+                    }}
+                  />
                 </div>
-                <button
-                  onClick={() => handleCreate(currentSystem.name, selectedSubspecialty)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
-                  + 添加零部件
-                </button>
-              </div>
-
-              {/* Parts Grid */}
-              {(() => {
-                const subspecialtyParts = getPartsBySystemAndSubspecialty(
-                  currentSystem.name,
-                  selectedSubspecialty
-                );
-
-                if (subspecialtyParts.length === 0) {
-                  return (
-                    <div className="p-12 text-center text-gray-500">
-                      <p className="text-lg mb-2">
-                        {searchTerm ? '未找到匹配的零部件' : '暂无零部件'}
+              ) : (
+                <>
+                  <div className="p-6 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+                    <div>
+                      <h3 className="text-xl font-semibold text-gray-900">
+                        {selectedSubspecialty}
+                      </h3>
+                      <p className="text-sm text-gray-600 mt-1">
+                        共 {getPartsBySystemAndSubspecialty(currentSystem.name, selectedSubspecialty).length} 个零部件
                       </p>
-                      {searchTerm ? (
-                        <button
-                          onClick={() => setSearchTerm('')}
-                          className="text-sm text-blue-600 hover:text-blue-700"
-                        >
-                          清除搜索条件
-                        </button>
-                      ) : (
-                        <p className="text-sm">点击"添加零部件"按钮创建第一个</p>
-                      )}
                     </div>
-                  );
-                }
+                    <button
+                      onClick={() => handleCreate(currentSystem.name, selectedSubspecialty)}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    >
+                      + 添加零部件
+                    </button>
+                  </div>
 
-                return (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
-                    {subspecialtyParts.map((part) => {
-                      const partMaterials = materials.filter((m) =>
-                        part.materials.includes(m.id)
-                      );
+                  {/* Parts Grid */}
+                  {(() => {
+                    const subspecialtyParts = getPartsBySystemAndSubspecialty(
+                      currentSystem.name,
+                      selectedSubspecialty
+                    );
 
+                    if (subspecialtyParts.length === 0) {
                       return (
-                        <div
-                          key={part.id}
-                          className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
-                        >
-                          {/* Image Area */}
-                          <div className="h-48 bg-gray-100 overflow-hidden">
-                            {part.imageUrl ? (
-                              <img
-                                src={part.imageUrl}
-                                alt={part.name}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).style.display = 'none';
-                                  (e.target as HTMLImageElement).parentElement!.innerHTML =
-                                    '<div class="w-full h-full flex items-center justify-center text-gray-400 text-sm">无图片</div>';
-                                }}
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-gray-400 text-4xl">
-                                📦
-                              </div>
-                            )}
-                          </div>
+                        <div className="p-12 text-center text-gray-500">
+                          <p className="text-lg mb-2">
+                            {searchTerm ? '未找到匹配的零部件' : '暂无零部件'}
+                          </p>
+                          {searchTerm ? (
+                            <button
+                              onClick={() => setSearchTerm('')}
+                              className="text-sm text-blue-600 hover:text-blue-700"
+                            >
+                              清除搜索条件
+                            </button>
+                          ) : (
+                            <p className="text-sm">点击"添加零部件"按钮创建第一个</p>
+                          )}
+                        </div>
+                      );
+                    }
 
-                          {/* Content Area */}
-                          <div className="p-4">
-                            <h3 className="font-semibold text-lg text-gray-900 mb-1">
-                              {part.name}
-                            </h3>
-                            {part.nameEn && (
-                              <p className="text-xs text-gray-500 mb-2">{part.nameEn}</p>
-                            )}
-                            <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                              {part.description || '暂无描述'}
-                            </p>
-                            <div className="mb-3">
-                              <span className="text-xs text-gray-500">材料：</span>
-                              <div className="flex flex-wrap gap-1 mt-1">
-                                {partMaterials.map((m) => (
-                                  <span
-                                    key={m.id}
+                    return (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
+                        {subspecialtyParts.map((part) => {
+                          const partMaterials = materials.filter((m) =>
+                            part.materials.includes(m.id)
+                          );
+
+                          return (
+                            <div
+                              key={part.id}
+                              className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
+                            >
+                              {/* Image Area */}
+                              <div className="h-48 bg-gray-100 overflow-hidden">
+                                {part.imageUrl ? (
+                                  <img
+                                    src={part.imageUrl}
+                                    alt={part.name}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      (e.target as HTMLImageElement).style.display = 'none';
+                                      (e.target as HTMLImageElement).parentElement!.innerHTML =
+                                        '<div class="w-full h-full flex items-center justify-center text-gray-400 text-sm">无图片</div>';
+                                    }}
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-gray-400 text-4xl">
+                                    📦
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Content Area */}
+                              <div className="p-4">
+                                <h3 className="font-semibold text-lg text-gray-900 mb-1">
+                                  {part.name}
+                                </h3>
+                                {part.nameEn && (
+                                  <p className="text-xs text-gray-500 mb-2">{part.nameEn}</p>
+                                )}
+                                <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                                  {part.description || '暂无描述'}
+                                </p>
+                                <div className="mb-3">
+                                  <span className="text-xs text-gray-500">材料：</span>
+                                  <div className="flex flex-wrap gap-1 mt-1">
+                                    {partMaterials.map((m) => (
+                                      <span
+                                        key={m.id}
                                     className="px-2 py-0.5 bg-green-50 text-green-700 text-xs rounded"
                                   >
                                     {m.name}
@@ -746,6 +816,8 @@ export default function PartsPage() {
                   </div>
                 );
               })()}
+            </>
+          )}
             </div>
           )}
         </div>
