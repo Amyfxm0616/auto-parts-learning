@@ -10,11 +10,9 @@ export default function AdminPage() {
   const [editingPart, setEditingPart] = useState<Part | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [selectedSystem, setSelectedSystem] = useState<string>('sys-001');
+  const [newMaterialName, setNewMaterialName] = useState('');
+  const [newMaterialReason, setNewMaterialReason] = useState('');
 
-  // 只显示非金属材料
-  const nonMetalMaterials = materials.filter((m) =>
-    m.category !== 'metal' && m.category !== 'ceramic'
-  );
 
   useEffect(() => {
     const savedParts = localStorage.getItem('customParts');
@@ -116,7 +114,7 @@ export default function AdminPage() {
               </h2>
 
               <div className="space-y-4">
-                {/* 图片预览和编辑 */}
+                {/* 图片上传 */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     零部件图片
@@ -133,18 +131,37 @@ export default function AdminPage() {
                               'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23ddd" width="200" height="200"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle"%3E图片加载失败%3C/text%3E%3C/svg%3E';
                           }}
                         />
+                        <button
+                          type="button"
+                          onClick={() => updateField('imageUrl', '')}
+                          className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                        >
+                          ×
+                        </button>
                       </div>
                     )}
-                    <input
-                      type="text"
-                      value={editingPart.imageUrl || ''}
-                      onChange={(e) => updateField('imageUrl', e.target.value)}
-                      placeholder="输入图片URL地址，例如：https://example.com/image.jpg"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    />
-                    <p className="text-xs text-gray-500">
-                      提示：可以使用在线图片链接，或上传图片到图床后粘贴链接
-                    </p>
+                    <label className="flex items-center justify-center gap-2 px-4 py-3 bg-blue-50 border-2 border-dashed border-blue-300 rounded-lg cursor-pointer hover:bg-blue-100 transition-colors">
+                      <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                      </svg>
+                      <span className="text-sm text-blue-600 font-medium">
+                        {editingPart.imageUrl ? '重新上传图片' : '点击上传图片'}
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const reader = new FileReader();
+                          reader.onload = (ev) => {
+                            updateField('imageUrl', ev.target?.result as string);
+                          };
+                          reader.readAsDataURL(file);
+                        }}
+                      />
+                    </label>
                   </div>
                 </div>
 
@@ -205,36 +222,105 @@ export default function AdminPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    使用材料（仅非金属）*
+                    使用材料 *
                   </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {nonMetalMaterials.map((material) => (
-                      <label
-                        key={material.id}
-                        className="flex items-center gap-2 p-2 border border-gray-200 rounded cursor-pointer hover:bg-gray-50"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={editingPart.materials.includes(material.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              updateField('materials', [
-                                ...editingPart.materials,
-                                material.id,
-                              ]);
-                            } else {
-                              updateField(
-                                'materials',
-                                editingPart.materials.filter((m) => m !== material.id)
-                              );
-                            }
-                          }}
-                          className="rounded"
-                        />
-                        <span className="text-sm">{material.name}</span>
-                      </label>
-                    ))}
+                  {/* 手动输入材料名称和选择原因 */}
+                  <div className="flex gap-2 items-start">
+                    <input
+                      type="text"
+                      value={newMaterialName}
+                      onChange={(e) => setNewMaterialName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const name = newMaterialName.trim();
+                          if (name && !editingPart.materials.includes(name)) {
+                            updateField('materials', [...editingPart.materials, name]);
+                            const reasons = { ...(editingPart.materialReasons || {}) };
+                            if (newMaterialReason.trim()) reasons[name] = newMaterialReason.trim();
+                            updateField('materialReasons', reasons);
+                            setNewMaterialName('');
+                            setNewMaterialReason('');
+                          }
+                        }
+                      }}
+                      placeholder="材料类型（手动输入）"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                    />
+                    <input
+                      type="text"
+                      value={newMaterialReason}
+                      onChange={(e) => setNewMaterialReason(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const name = newMaterialName.trim();
+                          if (name && !editingPart.materials.includes(name)) {
+                            updateField('materials', [...editingPart.materials, name]);
+                            const reasons = { ...(editingPart.materialReasons || {}) };
+                            if (newMaterialReason.trim()) reasons[name] = newMaterialReason.trim();
+                            updateField('materialReasons', reasons);
+                            setNewMaterialName('');
+                            setNewMaterialReason('');
+                          }
+                        }
+                      }}
+                      placeholder="备注选择原因（可选）"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const name = newMaterialName.trim();
+                        if (name && !editingPart.materials.includes(name)) {
+                          updateField('materials', [...editingPart.materials, name]);
+                          const reasons = { ...(editingPart.materialReasons || {}) };
+                          if (newMaterialReason.trim()) reasons[name] = newMaterialReason.trim();
+                          updateField('materialReasons', reasons);
+                          setNewMaterialName('');
+                          setNewMaterialReason('');
+                        }
+                      }}
+                      disabled={!newMaterialName.trim()}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-sm whitespace-nowrap"
+                    >
+                      + 添加
+                    </button>
                   </div>
+                  <p className="text-xs text-gray-400 mt-1">输入材料名称后点击添加，或按 Enter 确认；可添加多个材料</p>
+                  {/* 已添加的材料列表 */}
+                  {editingPart.materials.length > 0 && (
+                    <div className="flex flex-col gap-2 mt-3">
+                      {editingPart.materials.map((matName) => {
+                        const reason = (editingPart.materialReasons || {})[matName];
+                        return (
+                          <div
+                            key={matName}
+                            className="flex items-start justify-between gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <span className="text-sm font-medium text-blue-800">{matName}</span>
+                              {reason && (
+                                <p className="text-xs text-blue-600 mt-0.5 break-words">原因：{reason}</p>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                updateField('materials', editingPart.materials.filter((m) => m !== matName));
+                                const reasons = { ...(editingPart.materialReasons || {}) };
+                                delete reasons[matName];
+                                updateField('materialReasons', reasons);
+                              }}
+                              className="flex-shrink-0 text-blue-400 hover:text-red-600 font-bold text-lg leading-none"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 <div>

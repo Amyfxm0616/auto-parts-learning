@@ -61,6 +61,69 @@ export default function Home() {
         </Link>
       </div>
 
+      {/* New Interactive Features - Highlighted Section */}
+      <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg shadow-lg p-8 mb-12 text-white">
+        <h2 className="text-3xl font-bold mb-4">🎨 全新交互功能</h2>
+        <p className="text-lg mb-6 opacity-90">
+          体验可编辑的零部件示意图，实时拖拽、调整、编辑，创建自己的学习资料
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Link
+            to="/editable-diagram"
+            className="bg-white text-gray-900 p-6 rounded-lg shadow hover:shadow-xl transition-all transform hover:scale-105"
+          >
+            <div className="text-4xl mb-3">✏️</div>
+            <h3 className="text-xl font-semibold mb-2">基础版可编辑示意图</h3>
+            <p className="text-sm text-gray-600 mb-3">
+              支持4种专业：座椅、灯具、智能电子、内饰
+            </p>
+            <ul className="text-xs text-gray-500 space-y-1">
+              <li>✓ 拖拽移动图形</li>
+              <li>✓ 调整大小和颜色</li>
+              <li>✓ 编辑文本标签</li>
+              <li>✓ 快速上手使用</li>
+            </ul>
+          </Link>
+
+          <Link
+            to="/advanced-diagram"
+            className="bg-white text-gray-900 p-6 rounded-lg shadow hover:shadow-xl transition-all transform hover:scale-105"
+          >
+            <div className="text-4xl mb-3">🚀</div>
+            <h3 className="text-xl font-semibold mb-2">高级版示意图编辑器</h3>
+            <p className="text-sm text-gray-600 mb-3">
+              完整汽车系统示意图 + 专业级编辑功能
+            </p>
+            <ul className="text-xs text-gray-500 space-y-1">
+              <li>✓ 撤销/重做功能</li>
+              <li>✓ 添加/复制/删除元素</li>
+              <li>✓ 图层管理与透明度控制</li>
+              <li>✓ 导出JSON数据</li>
+            </ul>
+          </Link>
+
+          <Link
+            to="/interior-3d"
+            className="bg-gradient-to-br from-yellow-400 to-orange-500 text-white p-6 rounded-lg shadow-lg hover:shadow-2xl transition-all transform hover:scale-105 border-4 border-yellow-300"
+          >
+            <div className="text-4xl mb-3">🎮</div>
+            <div className="inline-block bg-red-500 text-white text-xs px-2 py-1 rounded-full mb-2 font-bold">
+              NEW
+            </div>
+            <h3 className="text-xl font-semibold mb-2">3D内饰交互编辑器</h3>
+            <p className="text-sm mb-3">
+              真实3D效果 + 全方位交互控制
+            </p>
+            <ul className="text-xs space-y-1">
+              <li>✓ 真3D透视渲染</li>
+              <li>✓ 拖拽+缩放+旋转</li>
+              <li>✓ 视角自由调整</li>
+              <li>✓ 沉浸式编辑体验</li>
+            </ul>
+          </Link>
+        </div>
+      </div>
+
       {/* Systems Overview */}
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-2xl font-bold mb-6">汽车系统分类</h2>

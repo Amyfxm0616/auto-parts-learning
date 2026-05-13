@@ -107,7 +107,7 @@ export const partSystems: PartSystem[] = [
     icon: '🚗',
     parts: [],
     description: '车身结构和外饰件',
-    subspecialties: ['白车身', '外饰件', '密封系统', '玻璃系统', '车门系统']
+    subspecialties: ['外观及功能饰件', '白车身', '外饰件', '密封系统', '玻璃系统', '车门系统', '格栅', '保险杠', '前端框架', '扰流板', 'AGS']
   },
   {
     id: 'sys-003',

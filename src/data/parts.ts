@@ -6,6 +6,7 @@ interface Part {
   category: string;
   subcategory?: string;
   materials: string[];
+  materialReasons?: Record<string, string>;
   primaryMaterial?: string;
   imageUrl?: string;
   modelUrl?: string;
@@ -30,6 +31,7 @@ export const parts: Part[] = [
     category: '座舱系统',
     subcategory: '内饰-仪表板-本体',
     materials: ['mat-004', 'mat-005'],
+    imageUrl: '/images/parts/dashboard-main-body.jpg',
     description: '仪表板主体结构，承载所有功能模块。',
     function: '支撑仪表、安全气囊，提供储物空间。',
     workingConditions: {
@@ -71,6 +73,66 @@ export const parts: Part[] = [
     manufacturingProcess: ['注塑成型', '软包', '装配']
   },
   {
+    id: 'part-003-1',
+    name: '上饰板骨架',
+    nameEn: 'Upper Trim Panel Frame',
+    category: '座舱系统',
+    subcategory: '内饰-门板-本体',
+    materials: ['mat-027', 'mat-028'],
+    description: '门板上部的骨架结构，X01车型使用PC/ABS，W01车型使用ABS H3。',
+    function: '支撑上饰板，提供结构强度。',
+    workingConditions: {
+      temperature: '-20至80°C',
+      environment: '室内、紫外线照射'
+    },
+    manufacturingProcess: ['注塑成型']
+  },
+  {
+    id: 'part-003-2',
+    name: '中饰板骨架',
+    nameEn: 'Middle Trim Panel Frame',
+    category: '座舱系统',
+    subcategory: '内饰-门板-本体',
+    materials: ['mat-004', 'mat-028'],
+    description: '门板中部的骨架结构，X01车型使用ABS，W01车型使用ABS H3。',
+    function: '支撑中饰板，提供结构强度。',
+    workingConditions: {
+      temperature: '-20至80°C',
+      environment: '室内、频繁接触'
+    },
+    manufacturingProcess: ['注塑成型']
+  },
+  {
+    id: 'part-003-3',
+    name: '裙板本体',
+    nameEn: 'Skirt Panel Body',
+    category: '座舱系统',
+    subcategory: '内饰-门板-本体',
+    materials: ['mat-029', 'mat-030'],
+    description: '门板下部的裙板，X01车型使用PP-EPDM-TD20，W01车型使用PP-EPDM-M10。',
+    function: '装饰门板下部，防止灰尘进入。',
+    workingConditions: {
+      temperature: '-30至80°C',
+      environment: '频繁接触、污染'
+    },
+    manufacturingProcess: ['注塑成型']
+  },
+  {
+    id: 'part-003-4',
+    name: '地图袋',
+    nameEn: 'Map Pocket',
+    category: '座舱系统',
+    subcategory: '内饰-门板-储物盒',
+    materials: ['mat-030'],
+    description: '门板上的储物袋，W01车型使用PP-EPDM-M10。',
+    function: '提供储物空间，放置地图、文件等物品。',
+    workingConditions: {
+      temperature: '-30至70°C',
+      environment: '频繁开合、承重'
+    },
+    manufacturingProcess: ['注塑成型']
+  },
+  {
     id: 'part-004',
     name: '门板扶手',
     nameEn: 'Door Armrest',
@@ -84,6 +146,66 @@ export const parts: Part[] = [
       environment: '频繁接触、承重'
     },
     manufacturingProcess: ['注塑成型', '软包']
+  },
+  {
+    id: 'part-004-1',
+    name: '左前门拉手盒骨架',
+    nameEn: 'Front Left Door Handle Box Frame',
+    category: '座舱系统',
+    subcategory: '内饰-门板-扶手',
+    materials: ['mat-004', 'mat-027'],
+    description: '左前门拉手盒的骨架结构，X01车型使用ABS，W01车型使用PC/ABS。',
+    function: '支撑拉手盒，提供拉手安装基础。',
+    workingConditions: {
+      temperature: '-20至80°C',
+      environment: '频繁拉拽、承重'
+    },
+    manufacturingProcess: ['注塑成型']
+  },
+  {
+    id: 'part-004-2',
+    name: '拉手本体',
+    nameEn: 'Handle Body',
+    category: '座舱系统',
+    subcategory: '内饰-门板-扶手',
+    materials: ['mat-029', 'mat-028'],
+    description: '门内拉手主体，X01车型使用PP-EPDM-TD20，W01车型使用ABS H3。',
+    function: '提供拉拽门的功能，便于开关门。',
+    workingConditions: {
+      temperature: '-20至80°C',
+      environment: '频繁拉拽、承重'
+    },
+    manufacturingProcess: ['注塑成型']
+  },
+  {
+    id: 'part-004-3',
+    name: '扶手饰板本体',
+    nameEn: 'Armrest Trim Body',
+    category: '座舱系统',
+    subcategory: '内饰-门板-扶手',
+    materials: ['mat-028'],
+    description: '扶手上的饰板，W01车型使用ABS H3，X01车型使用ABS H3。',
+    function: '装饰扶手，提供美观的外观。',
+    workingConditions: {
+      temperature: '-20至80°C',
+      environment: '频繁接触'
+    },
+    manufacturingProcess: ['注塑成型']
+  },
+  {
+    id: 'part-004-4',
+    name: '靠枕本体',
+    nameEn: 'Armrest Headrest Body',
+    category: '座舱系统',
+    subcategory: '内饰-门板-扶手',
+    materials: ['mat-028'],
+    description: '扶手上的靠枕，W01车型使用ABS H3，X01车型使用ABS H3。',
+    function: '提供舒适的手臂支撑。',
+    workingConditions: {
+      temperature: '-20至80°C',
+      environment: '频繁接触、承重'
+    },
+    manufacturingProcess: ['注塑成型']
   },
   {
     id: 'part-005',
@@ -423,16 +545,91 @@ export const parts: Part[] = [
   // 车身系统
   {
     id: 'part-026',
+    name: '格栅',
+    nameEn: 'Grille',
+    category: '车身系统',
+    subcategory: '格栅',
+    materials: ['mat-005', 'mat-027'],
+    description: '车辆前部的进气格栅，用于进气散热和装饰。',
+    function: '进气散热，支撑前大灯传感器，装饰车辆前脸。',
+    workingConditions: {
+      temperature: '-40至90°C',
+      environment: '室外暴晒、石击、水汽'
+    },
+    manufacturingProcess: ['注塑成型', '电镀', '喷涂']
+  },
+  {
+    id: 'part-027',
     name: '保险杠',
     nameEn: 'Bumper',
     category: '车身系统',
-    subcategory: '外饰件',
-    materials: ['mat-004', 'mat-005'],
-    description: '保险杠用于吸收低速碰撞能量，保护车辆和行人。',
+    subcategory: '保险杠',
+    materials: ['mat-005', 'mat-029'],
+    description: '用于吸收低速碰撞能量的前后保险杠。',
     function: '低速碰撞保护，美化车身外观，支撑牌照和传感器。',
     workingConditions: {
-      temperature: '-40至80°C',
-      environment: '室外暴晒、雨淋、冲击'
+      temperature: '-40至90°C',
+      environment: '室外暴晒、雨淋、石击、冲击'
+    },
+    manufacturingProcess: ['注塑成型', '喷涂']
+  },
+  {
+    id: 'part-028',
+    name: '前端框架',
+    nameEn: 'Front End Module',
+    category: '车身系统',
+    subcategory: '前端框架',
+    materials: ['mat-005', 'mat-019', 'mat-021'],
+    description: '前部主要结构件，集中装配散热器、冷凝器、大灯等部件。',
+    function: '支撑前部总成，承载冷却系统，安装大灯和传感器。',
+    workingConditions: {
+      temperature: '-40至110°C',
+      environment: '发动机舱热环境、振动'
+    },
+    manufacturingProcess: ['注塑成型', '装配']
+  },
+  {
+    id: 'part-029',
+    name: '扰流板',
+    nameEn: 'Spoiler',
+    category: '车身系统',
+    subcategory: '扰流板',
+    materials: ['mat-005', 'mat-027'],
+    description: '车辆后部的空气动力学部件。',
+    function: '优化空气动力学性能，增加下压力，改善车辆稳定性。',
+    workingConditions: {
+      temperature: '-40至90°C',
+      environment: '室外暴晒、高速气流'
+    },
+    manufacturingProcess: ['注塑成型', '喷涂']
+  },
+  {
+    id: 'part-030',
+    name: 'AGS（主动进气格栅）',
+    nameEn: 'Active Grille Shutter',
+    category: '车身系统',
+    subcategory: 'AGS',
+    materials: ['mat-005', 'mat-021', 'mat-020'],
+    description: '可主动开闭的进气格栅系统。',
+    function: '调节进气量以优化发动机热管理，降低风阻，提高燃油经济性。',
+    workingConditions: {
+      temperature: '-40至110°C',
+      environment: '发动机舱、频繁动作、高温'
+    },
+    manufacturingProcess: ['注塑成型', '精密装配']
+  },
+  {
+    id: 'part-031',
+    name: '保险杠（模块化显示）',
+    nameEn: 'Bumper (Modular Display)',
+    category: '车身系统',
+    subcategory: '保险杠',
+    materials: ['mat-005', 'mat-029'],
+    description: '用于吸收低速碰撞能量的前后保险杠（模块化显示版本）。',
+    function: '低速碰撞保护，美化车身外观，支撑牌照和传感器。',
+    workingConditions: {
+      temperature: '-40至90°C',
+      environment: '室外暴晒、雨淋、石击、冲击'
     },
     manufacturingProcess: ['注塑成型', '喷涂']
   },

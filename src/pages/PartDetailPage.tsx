@@ -1,10 +1,15 @@
 import { Link, useParams } from 'react-router-dom';
-import { parts } from '../data/parts';
+import { parts as initialParts } from '../data/parts';
 import { materials } from '../data/materials';
 
 export default function PartDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const part = parts.find((p) => p.id === id);
+
+  // Read from localStorage (saved by PartsPage), fallback to static data
+  const savedPartsRaw = typeof window !== 'undefined' ? localStorage.getItem('customParts') : null;
+  const parts = savedPartsRaw ? JSON.parse(savedPartsRaw) : initialParts;
+
+  const part = parts.find((p: typeof initialParts[number]) => p.id === id);
 
   if (!part) {
     return (
@@ -38,8 +43,12 @@ export default function PartDetailPage() {
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
         {/* Image Section */}
-        <div className="h-64 bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
-          <span className="text-8xl">🔧</span>
+        <div className="h-64 bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center overflow-hidden">
+          {part.imageUrl ? (
+            <img src={part.imageUrl} alt={part.name} className="h-full w-full object-contain" />
+          ) : (
+            <span className="text-8xl">🔧</span>
+          )}
         </div>
 
         {/* Content Section */}

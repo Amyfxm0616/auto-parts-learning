@@ -1,34 +1,77 @@
 {
   "name": "auto-parts-learning",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "汽车零部件材料学习平台",
+  "author": "Auto Parts Team",
   "type": "module",
+  "main": "dist-electron/main.js",
+  "build": {
+    "appId": "com.autoparts.learning",
+    "productName": "汽车零部件学习平台",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*"
+    ],
+    "win": {
+      "target": "dir",
+      "artifactName": "${productName}.exe"
+    },
+    "asar": true,
+    "extraMetadata": {
+      "main": "dist-electron/main.cjs"
+    }
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:no-check": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
+    "electron:build": "npm run build:no-check && tsc -p electron/tsconfig.json && mv dist-electron/main.js dist-electron/main.cjs && electron-builder",
+    "electron:dist": "npm run build:no-check && tsc -p electron/tsconfig.json && mv dist-electron/main.js dist-electron/main.cjs && electron-builder --win",
+    "deploy": "vite build && netlify deploy --prod --dir=dist",
+    "sync-deploy": "node scripts/sync-questions.mjs && vite build && netlify deploy --prod --dir=dist"
   },
   "dependencies": {
+    "axios": "^1.13.6",
+    "browser-image-compression": "^2.0.2",
+    "lucide-react": "^1.7.0",
+    "mammoth": "^1.11.0",
+    "pdfjs-dist": "^5.5.207",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "react-router-dom": "^7.13.0"
+    "react-dropzone": "^15.0.0",
+    "react-router-dom": "^7.13.0",
+    "tesseract.js": "^7.0.0",
+    "xlsx": "^0.18.5",
+    "zustand": "^5.0.11"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
     "@types/node": "^24.10.1",
+    "@types/pdfjs-dist": "^2.10.378",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
     "autoprefixer": "^10.4.24",
+    "concurrently": "^9.2.1",
+    "electron": "^41.2.0",
+    "electron-builder": "^26.8.1",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
+    "gh-pages": "^6.3.0",
     "globals": "^16.5.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.19",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
-    "vite": "^7.2.4"
+    "vite": "^7.2.4",
+    "wait-on": "^9.0.5"
   }
 }

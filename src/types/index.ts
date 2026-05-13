@@ -76,14 +76,23 @@ export interface Favorite {
 // 测验题目
 export interface Question {
   id: string;
-  type: 'single' | 'multiple' | 'matching';
+  type: 'single' | 'multiple' | 'matching' | 'boolean' | 'fill' | 'essay';
   question: string;
-  options: string[];
-  correctAnswer: number | number[]; // 单选为number，多选为number[]
+  imageUrl?: string; // 题目配图
+  options?: string[]; // 选择题选项
+  optionImages?: string[]; // 选项配图
+  correctAnswer: number | number[] | string | string[] | boolean;
   explanation?: string;
   difficulty: 'easy' | 'medium' | 'hard';
   relatedPartId?: string;
   relatedMaterialId?: string;
+  category?: string; // 题目分类
+  tags?: string[]; // 标签
+  createdAt?: number;
+  updatedAt?: number;
+  fillBlanks?: number; // 填空题的空数
+  maxLength?: number; // 简答题的最大字数
+  keywords?: string[]; // 简答题的关键词
 }
 
 // 测验记录
@@ -94,3 +103,9 @@ export interface QuizRecord {
   isCorrect: boolean;
   timestamp: number;
 }
+
+// 重新导出upload相关类型
+export * from './upload';
+
+// 重新导出other材料相关类型
+export * from './other';
