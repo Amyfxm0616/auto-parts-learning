@@ -43,6 +43,12 @@ export default function PartsPage() {
   const [editingSubspecialty, setEditingSubspecialty] = useState<string | null>(null);
   const [isAddingSubspecialty, setIsAddingSubspecialty] = useState(false);
   const [newSubspecialtyName, setNewSubspecialtyName] = useState('');
+  // 系统编辑状态
+  const [isEditingSystems, setIsEditingSystems] = useState(false);
+  const [isAddingSystem, setIsAddingSystem] = useState(false);
+  const [newSystemName, setNewSystemName] = useState('');
+  const [newSystemIcon, setNewSystemIcon] = useState('📦');
+  const [newSystemDescription, setNewSystemDescription] = useState('');
   const [newMaterialInput, setNewMaterialInput] = useState('');
   const [selectedInteriorNode, setSelectedInteriorNode] = useState<string>(''); // 内饰树选中节点
   const [expandedInteriorL1, setExpandedInteriorL1] = useState<Set<string>>(new Set(['ia-01']));
@@ -231,6 +237,44 @@ export default function PartsPage() {
   const saveSystems = (newSystems: PartSystem[]) => {
     setSystems(newSystems);
     localStorage.setItem('customSystems', JSON.stringify(newSystems));
+  };
+
+  // 移动系统顺序
+  const handleMoveSystem = (index: number, direction: 'left' | 'right') => {
+    const swapIndex = direction === 'left' ? index - 1 : index + 1;
+    if (swapIndex < 0 || swapIndex >= systems.length) return;
+    const newSystems = [...systems];
+    [newSystems[index], newSystems[swapIndex]] = [newSystems[swapIndex], newSystems[index]];
+    saveSystems(newSystems);
+  };
+
+  // 删除系统
+  const handleDeleteSystem = (id: string) => {
+    const target = systems.find(s => s.id === id);
+    if (!window.confirm(`确定要删除「${target?.name}」系统吗？`)) return;
+    const newSystems = systems.filter(s => s.id !== id);
+    saveSystems(newSystems);
+    if (selectedSystem === id) {
+      setSelectedSystem(newSystems[0]?.id || '');
+    }
+  };
+
+  // 添加新系统
+  const handleAddSystem = () => {
+    if (!newSystemName.trim()) return;
+    const newSystem: PartSystem = {
+      id: `sys-${Date.now()}`,
+      name: newSystemName.trim(),
+      icon: newSystemIcon || '📦',
+      parts: [],
+      description: newSystemDescription.trim(),
+      subspecialties: [],
+    };
+    saveSystems([...systems, newSystem]);
+    setNewSystemName('');
+    setNewSystemIcon('📦');
+    setNewSystemDescription('');
+    setIsAddingSystem(false);
   };
 
   // 添加子专业
@@ -494,23 +538,128 @@ export default function PartsPage() {
       </div>
 
       {/* System Tabs */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow mb-6 overflow-x-auto transition-colors">
-        <div className="flex border-b border-gray-200 dark:border-gray-700">
-          {systems.map((system) => (
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow mb-6 transition-colors">
+        <div className="flex items-center border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
+          {systems.map((system, index) => (
+            isEditingSystems ? (
+              /* 编辑模式：显示排序和删除控件 */
+              <div key={system.id} className="flex-shrink-0 flex items-center gap-1 px-3 py-2 border-r border-gray-200 dark:border-gray-600">
+                <button
+                  onClick={() => handleMoveSystem(index, 'left')}
+                  disabled={index === 0}
+                  className="w-6 h-6 flex items-center justify-center rounded text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed text-xs"
+                  title="左移"
+                >◀</button>
+                <span className="px-2 py-1 text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                  <span className="mr-1">{system.icon}</span>{system.name}
+                </span>
+                <button
+                  onClick={() => handleMoveSystem(index, 'right')}
+                  disabled={index === systems.length - 1}
+                  className="w-6 h-6 flex items-center justify-center rounded text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed text-xs"
+                  title="右移"
+                >▶</button>
+                <button
+                  onClick={() => handleDeleteSystem(system.id)}
+                  className="w-6 h-6 flex items-center justify-center rounded text-red-400 hover:bg-red-50 hover:text-red-600 text-xs font-bold"
+                  title="删除系统"
+                >×</button>
+              </div>
+            ) : (
+              /* 正常模式：正常标签页 */
+              <button
+                key={system.id}
+                onClick={() => setSelectedSystem(system.id)}
+                className={`flex-shrink-0 px-6 py-3 text-sm font-medium whitespace-nowrap ${
+                  selectedSystem === system.id
+                    ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                <span className="mr-2">{system.icon}</span>
+                {system.name}
+              </button>
+            )
+          ))}
+
+          {/* 编辑模式：添加系统按钮 */}
+          {isEditingSystems && (
             <button
-              key={system.id}
-              onClick={() => setSelectedSystem(system.id)}
-              className={`flex-shrink-0 px-6 py-3 text-sm font-medium whitespace-nowrap ${
-                selectedSystem === system.id
-                  ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              onClick={() => setIsAddingSystem(true)}
+              className="flex-shrink-0 px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 whitespace-nowrap font-medium"
+            >
+              + 添加系统
+            </button>
+          )}
+
+          {/* 右侧编辑按钮 */}
+          <div className="ml-auto flex-shrink-0 px-3 py-2">
+            <button
+              onClick={() => { setIsEditingSystems(!isEditingSystems); setIsAddingSystem(false); }}
+              className={`px-3 py-1.5 text-xs rounded border font-medium whitespace-nowrap transition-colors ${
+                isEditingSystems
+                  ? 'bg-green-500 text-white border-green-500 hover:bg-green-600'
+                  : 'text-gray-500 border-gray-300 hover:bg-gray-50'
               }`}
             >
-              <span className="mr-2">{system.icon}</span>
-              {system.name}
+              {isEditingSystems ? '✓ 完成编辑' : '✎ 编辑系统'}
             </button>
-          ))}
+          </div>
         </div>
+
+        {/* 添加新系统表单 */}
+        {isEditingSystems && isAddingSystem && (
+          <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+            <div className="flex flex-wrap gap-3 items-end">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">图标（emoji）</label>
+                <input
+                  type="text"
+                  value={newSystemIcon}
+                  onChange={e => setNewSystemIcon(e.target.value)}
+                  className="w-16 border border-gray-300 rounded px-2 py-1.5 text-center text-lg"
+                  maxLength={2}
+                />
+              </div>
+              <div className="flex-1 min-w-32">
+                <label className="block text-xs text-gray-500 mb-1">系统名称 *</label>
+                <input
+                  type="text"
+                  value={newSystemName}
+                  onChange={e => setNewSystemName(e.target.value)}
+                  placeholder="如：热管理系统"
+                  className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm"
+                  onKeyDown={e => e.key === 'Enter' && handleAddSystem()}
+                />
+              </div>
+              <div className="flex-1 min-w-40">
+                <label className="block text-xs text-gray-500 mb-1">描述（可选）</label>
+                <input
+                  type="text"
+                  value={newSystemDescription}
+                  onChange={e => setNewSystemDescription(e.target.value)}
+                  placeholder="系统描述"
+                  className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm"
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleAddSystem}
+                  disabled={!newSystemName.trim()}
+                  className="px-4 py-1.5 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 disabled:opacity-40"
+                >
+                  确认添加
+                </button>
+                <button
+                  onClick={() => { setIsAddingSystem(false); setNewSystemName(''); setNewSystemIcon('📦'); setNewSystemDescription(''); }}
+                  className="px-4 py-1.5 bg-gray-200 text-gray-700 text-sm rounded hover:bg-gray-300"
+                >
+                  取消
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 编辑零部件模态框 */}
