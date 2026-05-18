@@ -14,6 +14,7 @@ import PartDetailPage from './pages/PartDetailPage';
 import LightingPartDetailPage from './pages/LightingPartDetailPage';
 import SeatPartDetailPage from './pages/SeatPartDetailPage';
 import BodyTrimPartDetailPage from './pages/BodyTrimPartDetailPage';
+import SmartElectronicsPartDetailPage from './pages/SmartElectronicsPartDetailPage';
 import MaterialDetailPage from './pages/MaterialDetailPage';
 import QuizPage from './pages/QuizPage';
 import QuizManagementPage from './pages/QuizManagementPage';
@@ -39,6 +40,7 @@ function App() {
           <Route path="/lighting-parts/:id" element={<LightingPartDetailPage />} />
           <Route path="/seat-parts/:id" element={<SeatPartDetailPage />} />
           <Route path="/body-trim-parts/:id" element={<BodyTrimPartDetailPage />} />
+          <Route path="/smart-electronics-parts/:id" element={<SmartElectronicsPartDetailPage />} />
           <Route path="/shared" element={<SharedPartPage />} />
           <Route path="/materials" element={<MaterialsPage />} />
           <Route path="/materials/pyramid" element={<MaterialPyramidPage />} />
