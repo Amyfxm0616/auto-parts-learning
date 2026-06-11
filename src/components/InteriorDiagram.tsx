@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { materials } from '../data/materials';
 
 type Part = {
@@ -12,931 +12,551 @@ type Part = {
   function?: string;
 };
 
-interface DiagramArea {
-  id: string;
-  type: 'path' | 'rect' | 'ellipse' | 'circle';
-  partType: string;
-  label: string;
-  x?: number;
-  y?: number;
-  width?: number;
-  height?: number;
-  rx?: number;
-  ry?: number;
-  cx?: number;
-  cy?: number;
-  r?: number;
-  d?: string;
-}
-
 interface InteriorDiagramProps {
   parts: Part[];
   onPartClick: (part: Part) => void;
   onPartEdit?: (part: Part) => void;
 }
 
-export default function InteriorDiagram({ parts, onPartClick, onPartEdit }: InteriorDiagramProps) {
-  const [hoveredPart, setHoveredPart] = useState<string | null>(null);
-  const [selectedPart, setSelectedPart] = useState<Part | null>(null);
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [draggingArea, setDraggingArea] = useState<string | null>(null);
-  const [editingArea, setEditingArea] = useState<string | null>(null);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+type Zone = {
+  id: string;
+  partType: string;
+  label: string;
+  color: string;
+  bg: string;
+  zoneX: number; zoneY: number; zoneW: number; zoneH: number;
+  rx?: number;
+  dotX: number; dotY: number;
+  labelX: number; labelY: number;
+};
 
-  // 缩放和平移状态
+const HANDLES = ['nw','n','ne','e','se','s','sw','w'] as const;
+type HandleDir = typeof HANDLES[number];
+
+const CURSOR_MAP: Record<HandleDir, string> = {
+  nw: 'nw-resize', n: 'n-resize',  ne: 'ne-resize',
+  e:  'e-resize',  se: 'se-resize', s:  's-resize',
+  sw: 'sw-resize', w:  'w-resize',
+};
+
+function handlePos(z: Zone, dir: HandleDir) {
+  const cx = z.zoneX + z.zoneW / 2, cy = z.zoneY + z.zoneH / 2;
+  switch (dir) {
+    case 'nw': return { x: z.zoneX,           y: z.zoneY };
+    case 'n':  return { x: cx,                 y: z.zoneY };
+    case 'ne': return { x: z.zoneX + z.zoneW,  y: z.zoneY };
+    case 'e':  return { x: z.zoneX + z.zoneW,  y: cy };
+    case 'se': return { x: z.zoneX + z.zoneW,  y: z.zoneY + z.zoneH };
+    case 's':  return { x: cx,                 y: z.zoneY + z.zoneH };
+    case 'sw': return { x: z.zoneX,            y: z.zoneY + z.zoneH };
+    case 'w':  return { x: z.zoneX,            y: cy };
+  }
+}
+
+const INITIAL_ZONES: Zone[] = [
+  {
+    id: 'rear_door',  partType: 'rear_door',  label: '后背门内饰板',
+    color: '#2563eb', bg: '#dbeafe',
+    zoneX: 40,  zoneY: 108, zoneW: 90,  zoneH: 322,
+    dotX: 85,   dotY: 108, labelX: 88,  labelY: 20,
+  },
+  {
+    id: 'rear_side',  partType: 'rear_side',  label: '后侧围内饰板',
+    color: '#0891b2', bg: '#e0f2fe',
+    zoneX: 130, zoneY: 175, zoneW: 85,  zoneH: 255,
+    dotX: 172,  dotY: 175, labelX: 172, labelY: 20,
+  },
+  {
+    id: 'pillar',     partType: 'pillar',     label: '立柱内饰板',
+    color: '#475569', bg: '#e2e8f0',
+    zoneX: 215, zoneY: 55,  zoneW: 25,  zoneH: 385,
+    dotX: 228,  dotY: 62,  labelX: 284, labelY: 20,
+  },
+  {
+    id: 'door',       partType: 'door',       label: '门饰板',
+    color: '#059669', bg: '#d1fae5',
+    zoneX: 240, zoneY: 108, zoneW: 175, zoneH: 322,
+    dotX: 328,  dotY: 108, labelX: 390, labelY: 20,
+  },
+  {
+    id: 'headliner',  partType: 'headliner',  label: '顶棚总成',
+    color: '#7c3aed', bg: '#ede9fe',
+    zoneX: 40,  zoneY: 55,  zoneW: 740, zoneH: 53,
+    dotX: 420,  dotY: 62,  labelX: 506, labelY: 20,
+  },
+  {
+    id: 'handle',     partType: 'handle',     label: '内扣手',
+    color: '#d97706', bg: '#fef3c7',
+    zoneX: 255, zoneY: 260, zoneW: 130, zoneH: 38,
+    dotX: 400,  dotY: 260, rx: 4,
+    labelX: 598, labelY: 20,
+  },
+  {
+    id: 'dashboard',  partType: 'dashboard',  label: '仪表板',
+    color: '#dc2626', bg: '#fee2e2',
+    zoneX: 628, zoneY: 55,  zoneW: 152, zoneH: 230,
+    dotX: 704,  dotY: 62,  labelX: 730, labelY: 20,
+  },
+  {
+    id: 'carpet',     partType: 'carpet',     label: '地毯脚垫',
+    color: '#92400e', bg: '#fef9c3',
+    zoneX: 40,  zoneY: 418, zoneW: 740, zoneH: 22,
+    dotX: 220,  dotY: 440, labelX: 185, labelY: 468,
+  },
+  {
+    id: 'fridge',     partType: 'fridge',     label: '冰箱总成',
+    color: '#0d9488', bg: '#ccfbf1',
+    zoneX: 418, zoneY: 360, zoneW: 120, zoneH: 58, rx: 4,
+    dotX: 478,  dotY: 418, labelX: 370, labelY: 468,
+  },
+  {
+    id: 'door_sill',  partType: 'door_sill',  label: '门槛内饰板',
+    color: '#64748b', bg: '#f1f5f9',
+    zoneX: 40,  zoneY: 400, zoneW: 740, zoneH: 18,
+    dotX: 550,  dotY: 418, labelX: 520, labelY: 468,
+  },
+  {
+    id: 'cnsl',       partType: 'cnsl',       label: '副仪表板',
+    color: '#9333ea', bg: '#f3e8ff',
+    zoneX: 628, zoneY: 285, zoneW: 152, zoneH: 133,
+    dotX: 704,  dotY: 418, labelX: 648, labelY: 468,
+  },
+  {
+    id: 'vent',       partType: 'vent',       label: '出风口',
+    color: '#ea580c', bg: '#ffedd5',
+    zoneX: 640, zoneY: 132, zoneW: 62,  zoneH: 30, rx: 3,
+    dotX: 750,  dotY: 370, labelX: 750, labelY: 468,
+  },
+];
+
+export default function InteriorDiagram({ parts, onPartClick, onPartEdit }: InteriorDiagramProps) {
+  const [zones, setZones] = useState<Zone[]>(() => INITIAL_ZONES.map(z => ({ ...z })));
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedPart, setSelectedPart] = useState<Part | null>(null);
+
   const [scale, setScale] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
-  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+  const panStartRef = useRef({ mx: 0, my: 0, px: 0, py: 0 });
 
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // 默认区域配置
-  const defaultAreas: DiagramArea[] = [
-    {
-      id: 'headliner',
-      type: 'path',
-      partType: 'headliner',
-      label: '顶棚',
-      d: 'M 100 50 Q 400 30 700 50 L 700 120 Q 400 100 100 120 Z',
-    },
-    {
-      id: 'dashboard',
-      type: 'rect',
-      partType: 'dashboard',
-      label: '仪表板',
-      x: 520,
-      y: 200,
-      width: 200,
-      height: 120,
-      rx: 10,
-    },
-    {
-      id: 'cnsl',
-      type: 'rect',
-      partType: 'cnsl',
-      label: '中控',
-      x: 420,
-      y: 320,
-      width: 120,
-      height: 180,
-      rx: 8,
-    },
-    {
-      id: 'door',
-      type: 'rect',
-      partType: 'door',
-      label: '门板',
-      x: 80,
-      y: 200,
-      width: 160,
-      height: 280,
-      rx: 10,
-    },
-    {
-      id: 'pillar-left',
-      type: 'rect',
-      partType: 'pillar',
-      label: '立柱',
-      x: 260,
-      y: 150,
-      width: 50,
-      height: 300,
-      rx: 8,
-    },
-    {
-      id: 'pillar-right',
-      type: 'rect',
-      partType: 'pillar',
-      label: '立柱',
-      x: 490,
-      y: 150,
-      width: 50,
-      height: 300,
-      rx: 8,
-    },
-    {
-      id: 'carpet',
-      type: 'ellipse',
-      partType: 'carpet',
-      label: '地毯',
-      cx: 300,
-      cy: 530,
-      rx: 250,
-      ry: 50,
-    },
-  ];
+  // 拖拽状态（用 ref 避免重渲染延迟）
+  const dragRef = useRef<{
+    mode: 'move' | 'resize';
+    zoneId: string;
+    handle: HandleDir | null;
+    startX: number; startY: number;
+    orig: Zone;
+  } | null>(null);
 
-  // 从localStorage加载区域配置
-  const [areas, setAreas] = useState<DiagramArea[]>(() => {
-    const saved = localStorage.getItem('interiorDiagramAreas');
-    return saved ? JSON.parse(saved) : defaultAreas;
-  });
-
-  // 保存区域配置到localStorage
-  useEffect(() => {
-    localStorage.setItem('interiorDiagramAreas', JSON.stringify(areas));
-  }, [areas]);
-
-  // 按子专业分类内饰零部件
-  const interiorParts = {
+  const interiorParts: Record<string, Part[]> = {
     dashboard: parts.filter(p => p.subcategory?.startsWith('内饰-仪表板')),
-    door: parts.filter(p => p.subcategory?.startsWith('内饰-门板')),
-    cnsl: parts.filter(p => p.subcategory?.startsWith('内饰-CNSL')),
-    pillar: parts.filter(p => p.subcategory?.startsWith('内饰-立柱')),
+    door:      parts.filter(p => p.subcategory?.startsWith('内饰-门板') || p.subcategory?.startsWith('内饰-门饰板')),
+    cnsl:      parts.filter(p => p.subcategory?.startsWith('内饰-CNSL') || p.subcategory?.startsWith('内饰-副仪表板')),
+    pillar:    parts.filter(p => p.subcategory?.startsWith('内饰-立柱')),
     headliner: parts.filter(p => p.subcategory?.startsWith('内饰-顶棚')),
-    carpet: parts.filter(p => p.subcategory?.startsWith('内饰-地毯')),
+    carpet:    parts.filter(p => p.subcategory?.startsWith('内饰-地毯')),
+    rear_door: parts.filter(p => p.subcategory?.startsWith('内饰-后背门')),
+    rear_side: parts.filter(p => p.subcategory?.startsWith('内饰-后侧围')),
+    handle:    parts.filter(p => p.subcategory?.startsWith('内饰-内扣手')),
+    vent:      parts.filter(p => p.subcategory?.startsWith('内饰-出风口')),
+    door_sill: parts.filter(p => p.subcategory?.startsWith('内饰-门槛')),
+    fridge:    parts.filter(p => p.subcategory?.startsWith('内饰-冰箱')),
   };
 
-  const handleAreaClick = (partType: string, areaId: string) => {
-    if (isEditMode) {
-      setEditingArea(editingArea === areaId ? null : areaId);
+  // ── 坐标转换：屏幕坐标 → SVG 本地坐标 ──
+  const toSVG = (e: React.MouseEvent) => {
+    if (!svgRef.current) return { x: 0, y: 0 };
+    const pt = svgRef.current.createSVGPoint();
+    pt.x = e.clientX;
+    pt.y = e.clientY;
+    const m = svgRef.current.getScreenCTM();
+    if (!m) return { x: 0, y: 0 };
+    const p = pt.matrixTransform(m.inverse());
+    return { x: p.x, y: p.y };
+  };
+
+  // ── 区域点击（选中 + 展示零件） ──
+  const selectZone = (zoneId: string) => {
+    setSelectedId(zoneId);
+    const z = zones.find(z => z.id === zoneId);
+    if (!z) return;
+    const list = interiorParts[z.partType] || [];
+    setSelectedPart(list.length > 0 ? list[0] : null);
+  };
+
+  // ── 区域 mousedown：选中 or 启动移动 ──
+  const onZoneMD = (e: React.MouseEvent, zone: Zone) => {
+    if (e.button !== 0 || e.ctrlKey) return;
+    e.stopPropagation();
+    if (selectedId !== zone.id) {
+      selectZone(zone.id);
       return;
     }
-    const partsList = (interiorParts as any)[partType] || [];
-    if (partsList.length > 0) {
-      // 设置第一个零件为选中状态，显示其详细信息
-      setSelectedPart(partsList[0]);
-      console.log(`点击区域: ${partType}, 找到 ${partsList.length} 个零件`, partsList);
-    } else {
-      // 如果没有找到零件，清空选中状态，但在控制台提示
-      console.warn(`点击区域: ${partType}, 但没有找到匹配的零件`);
-      setSelectedPart(null);
-    }
+    // 已选中 → 启动移动
+    const { x, y } = toSVG(e);
+    dragRef.current = { mode: 'move', zoneId: zone.id, handle: null, startX: x, startY: y, orig: { ...zone } };
   };
 
-  const getPartMaterials = (part: Part) => {
-    return materials.filter(m => part.materials.includes(m.id));
-  };
-
-  const handleMouseDown = (e: React.MouseEvent<SVGElement>, areaId: string) => {
-    if (!isEditMode || editingArea === areaId) return;
-    e.stopPropagation();
-    setDraggingArea(areaId);
-
-    const svg = svgRef.current;
-    if (!svg) return;
-
-    const rect = svg.getBoundingClientRect();
-    const svgX = (e.clientX - rect.left) * (800 / rect.width);
-    const svgY = (e.clientY - rect.top) * (600 / rect.height);
-
-    const area = areas.find(a => a.id === areaId);
-    if (!area) return;
-
-    const offsetX = area.x !== undefined ? svgX - area.x :
-                    area.cx !== undefined ? svgX - area.cx : 0;
-    const offsetY = area.y !== undefined ? svgY - area.y :
-                    area.cy !== undefined ? svgY - area.cy : 0;
-
-    setDragOffset({ x: offsetX, y: offsetY });
-  };
-
-  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
-    if (!isEditMode || !draggingArea) return;
-
-    const svg = svgRef.current;
-    if (!svg) return;
-
-    const rect = svg.getBoundingClientRect();
-    const svgX = (e.clientX - rect.left) * (800 / rect.width);
-    const svgY = (e.clientY - rect.top) * (600 / rect.height);
-
-    setAreas(prev => prev.map(area => {
-      if (area.id !== draggingArea) return area;
-
-      const newX = svgX - dragOffset.x;
-      const newY = svgY - dragOffset.y;
-
-      if (area.type === 'rect') {
-        return { ...area, x: newX, y: newY };
-      } else if (area.type === 'ellipse' || area.type === 'circle') {
-        return { ...area, cx: newX, cy: newY };
-      }
-      return area;
-    }));
-  };
-
-  const handleMouseUp = () => {
-    setDraggingArea(null);
-    setIsPanning(false);
-  };
-
-  // 鼠标滚轮缩放
-  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+  // ── 调整手柄 mousedown ──
+  const onHandleMD = (e: React.MouseEvent, zoneId: string, dir: HandleDir) => {
     e.preventDefault();
-    const delta = e.deltaY > 0 ? 0.9 : 1.1;
-    const newScale = Math.min(Math.max(0.5, scale * delta), 3);
-    setScale(newScale);
+    e.stopPropagation();
+    const { x, y } = toSVG(e);
+    const orig = zones.find(z => z.id === zoneId)!;
+    dragRef.current = { mode: 'resize', zoneId, handle: dir, startX: x, startY: y, orig: { ...orig } };
   };
 
-  // 缩放控制
-  const handleZoomIn = () => {
-    setScale(prev => Math.min(prev * 1.2, 3));
-  };
-
-  const handleZoomOut = () => {
-    setScale(prev => Math.max(prev / 1.2, 0.5));
-  };
-
-  const handleResetView = () => {
-    setScale(1);
-    setPan({ x: 0, y: 0 });
-  };
-
-  // 平移控制
-  const handlePanStart = (e: React.MouseEvent) => {
-    if (e.button === 1 || (e.button === 0 && e.ctrlKey)) { // 中键或Ctrl+左键
+  // ── 容器 mousedown（平移） ──
+  const onContainerMD = (e: React.MouseEvent) => {
+    if (e.button === 1 || (e.button === 0 && e.ctrlKey)) {
       e.preventDefault();
       setIsPanning(true);
-      setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
+      panStartRef.current = { mx: e.clientX, my: e.clientY, px: pan.x, py: pan.y };
     }
   };
 
-  const handlePanMove = (e: React.MouseEvent) => {
+  // ── mousemove：执行移动/缩放/平移 ──
+  const onMouseMove = (e: React.MouseEvent) => {
     if (isPanning) {
       setPan({
-        x: e.clientX - panStart.x,
-        y: e.clientY - panStart.y,
+        x: panStartRef.current.px + e.clientX - panStartRef.current.mx,
+        y: panStartRef.current.py + e.clientY - panStartRef.current.my,
       });
+      return;
     }
+    const drag = dragRef.current;
+    if (!drag) return;
+
+    const { x, y } = toSVG(e);
+    const dx = x - drag.startX, dy = y - drag.startY;
+    if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return;
+
+    const MIN = 15;
+    setZones(prev => prev.map(z => {
+      if (z.id !== drag.zoneId) return z;
+      if (drag.mode === 'move') {
+        return {
+          ...z,
+          zoneX: drag.orig.zoneX + dx,
+          zoneY: drag.orig.zoneY + dy,
+          dotX:  drag.orig.dotX  + dx,
+          dotY:  drag.orig.dotY  + dy,
+          labelX: drag.orig.labelX + dx,
+          // labelY 固定（顶/底标签行）
+        };
+      }
+      // ── resize ──
+      let { zoneX, zoneY, zoneW, zoneH } = drag.orig;
+      switch (drag.handle) {
+        case 'nw': zoneX += dx; zoneY += dy; zoneW -= dx; zoneH -= dy; break;
+        case 'n':  zoneY += dy; zoneH -= dy; break;
+        case 'ne': zoneY += dy; zoneW += dx; zoneH -= dy; break;
+        case 'e':  zoneW += dx; break;
+        case 'se': zoneW += dx; zoneH += dy; break;
+        case 's':  zoneH += dy; break;
+        case 'sw': zoneX += dx; zoneW -= dx; zoneH += dy; break;
+        case 'w':  zoneX += dx; zoneW -= dx; break;
+      }
+      if (zoneW < MIN) { zoneX = drag.orig.zoneX + drag.orig.zoneW - MIN; zoneW = MIN; }
+      if (zoneH < MIN) { zoneY = drag.orig.zoneY + drag.orig.zoneH - MIN; zoneH = MIN; }
+      return { ...z, zoneX, zoneY, zoneW, zoneH };
+    }));
   };
 
-  const handlePanEnd = () => {
+  const onMouseUp = () => {
+    dragRef.current = null;
     setIsPanning(false);
   };
 
-  const handleAddArea = () => {
-    const newArea: DiagramArea = {
-      id: `area-${Date.now()}`,
-      type: 'rect',
-      partType: 'other',
-      label: '新部件',
-      x: 300,
-      y: 300,
-      width: 100,
-      height: 100,
-      rx: 8,
-    };
-    setAreas([...areas, newArea]);
-    setEditingArea(newArea.id);
-  };
+  const bw = (label: string) => Math.max(40, label.length * 12 + 10);
 
-  const handleDeleteArea = (areaId: string) => {
-    if (confirm('确定要删除这个区域吗？')) {
-      setAreas(areas.filter(a => a.id !== areaId));
-      if (editingArea === areaId) {
-        setEditingArea(null);
-      }
-    }
-  };
-
-  const handleResetAreas = () => {
-    if (confirm('确定要重置所有区域位置吗？')) {
-      setAreas(defaultAreas);
-      setEditingArea(null);
-    }
-  };
-
-  const updateAreaProperty = (areaId: string | null, property: keyof DiagramArea, value: any) => {
-    if (!areaId) return;
-    setAreas(prev => prev.map(area => {
-      if (area.id === areaId) {
-        return { ...area, [property]: value };
-      }
-      return area;
-    }));
-  };
-
-  const changeAreaType = (areaId: string | null, newType: 'rect' | 'ellipse' | 'circle') => {
-    if (!areaId) return;
-    setAreas(prev => prev.map(area => {
-      if (area.id !== areaId) return area;
-
-      // 获取当前中心点
-      const centerX = area.x !== undefined ? area.x + (area.width || 0) / 2 :
-                     area.cx !== undefined ? area.cx : 300;
-      const centerY = area.y !== undefined ? area.y + (area.height || 0) / 2 :
-                     area.cy !== undefined ? area.cy : 300;
-
-      if (newType === 'rect') {
-        return {
-          ...area,
-          type: 'rect',
-          x: centerX - 50,
-          y: centerY - 50,
-          width: 100,
-          height: 100,
-          rx: 8,
-          cx: undefined,
-          cy: undefined,
-          r: undefined,
-        };
-      } else if (newType === 'ellipse') {
-        return {
-          ...area,
-          type: 'ellipse',
-          cx: centerX,
-          cy: centerY,
-          rx: 80,
-          ry: 50,
-          x: undefined,
-          y: undefined,
-          width: undefined,
-          height: undefined,
-          r: undefined,
-        };
-      } else if (newType === 'circle') {
-        return {
-          ...area,
-          type: 'circle',
-          cx: centerX,
-          cy: centerY,
-          r: 50,
-          x: undefined,
-          y: undefined,
-          width: undefined,
-          height: undefined,
-          rx: undefined,
-          ry: undefined,
-        };
-      }
-      return area;
-    }));
-  };
-
-  const renderArea = (area: DiagramArea) => {
-    const partsList = (interiorParts as any)[area.partType] || [];
-    const isHovered = hoveredPart === area.partType;
-    const isSelected = editingArea === area.id;
-    const fillColor = isSelected ? '#fbbf24' : isHovered ? '#93c5fd' : '#d1d5db';
-    const className = isEditMode
-      ? 'cursor-pointer transition-all hover:fill-blue-300'
-      : 'cursor-pointer transition-all hover:fill-blue-200';
-
-    const commonProps = {
-      fill: fillColor,
-      stroke: isSelected ? '#f59e0b' : '#374151',
-      strokeWidth: isSelected ? '4' : isEditMode ? '3' : '2',
-      className,
-      onMouseEnter: () => !isEditMode && setHoveredPart(area.partType),
-      onMouseLeave: () => !isEditMode && setHoveredPart(null),
-      onClick: () => handleAreaClick(area.partType, area.id),
-      onMouseDown: (e: React.MouseEvent<SVGElement>) => handleMouseDown(e, area.id),
-    };
-
-    if (area.type === 'path' && area.d) {
-      return (
-        <g key={area.id}>
-          <path d={area.d} {...commonProps} />
-          <text x="400" y="80" textAnchor="middle" className="fill-gray-700 text-sm font-medium pointer-events-none">
-            {area.label} ({partsList.length})
-          </text>
-        </g>
-      );
-    } else if (area.type === 'rect' && area.x !== undefined && area.y !== undefined) {
-      return (
-        <g key={area.id}>
-          <rect
-            x={area.x}
-            y={area.y}
-            width={area.width}
-            height={area.height}
-            rx={area.rx}
-            {...commonProps}
-          />
-          <text
-            x={area.x + (area.width || 0) / 2}
-            y={area.y + (area.height || 0) / 2 - 5}
-            textAnchor="middle"
-            className="fill-gray-700 text-sm font-medium pointer-events-none"
-          >
-            {area.label}
-          </text>
-          <text
-            x={area.x + (area.width || 0) / 2}
-            y={area.y + (area.height || 0) / 2 + 15}
-            textAnchor="middle"
-            className="fill-gray-600 text-xs pointer-events-none"
-          >
-            ({partsList.length})
-          </text>
-          {isEditMode && !isSelected && (
-            <circle
-              cx={area.x + (area.width || 0)}
-              cy={area.y}
-              r="12"
-              fill="#ef4444"
-              className="cursor-pointer"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDeleteArea(area.id);
-              }}
-            >
-              <title>删除</title>
-            </circle>
-          )}
-        </g>
-      );
-    } else if (area.type === 'ellipse' && area.cx !== undefined && area.cy !== undefined) {
-      return (
-        <g key={area.id}>
-          <ellipse
-            cx={area.cx}
-            cy={area.cy}
-            rx={area.rx}
-            ry={area.ry}
-            {...commonProps}
-          />
-          <text x={area.cx} y={area.cy} textAnchor="middle" className="fill-gray-700 text-sm font-medium pointer-events-none">
-            {area.label}
-          </text>
-          <text x={area.cx} y={area.cy + 15} textAnchor="middle" className="fill-gray-600 text-xs pointer-events-none">
-            ({partsList.length})
-          </text>
-          {isEditMode && !isSelected && (
-            <circle
-              cx={area.cx + (area.rx || 0)}
-              cy={area.cy}
-              r="12"
-              fill="#ef4444"
-              className="cursor-pointer"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDeleteArea(area.id);
-              }}
-            >
-              <title>删除</title>
-            </circle>
-          )}
-        </g>
-      );
-    } else if (area.type === 'circle' && area.cx !== undefined && area.cy !== undefined) {
-      return (
-        <g key={area.id}>
-          <circle
-            cx={area.cx}
-            cy={area.cy}
-            r={area.r}
-            {...commonProps}
-          />
-          <text x={area.cx} y={area.cy} textAnchor="middle" className="fill-gray-700 text-sm font-medium pointer-events-none">
-            {area.label}
-          </text>
-          <text x={area.cx} y={area.cy + 15} textAnchor="middle" className="fill-gray-600 text-xs pointer-events-none">
-            ({partsList.length})
-          </text>
-          {isEditMode && !isSelected && (
-            <circle
-              cx={area.cx + (area.r || 0)}
-              cy={area.cy}
-              r="12"
-              fill="#ef4444"
-              className="cursor-pointer"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDeleteArea(area.id);
-              }}
-            >
-              <title>删除</title>
-            </circle>
-          )}
-        </g>
-      );
-    }
-    return null;
-  };
-
-  const editingAreaData = areas.find(a => a.id === editingArea);
+  const selZone = zones.find(z => z.id === selectedId);
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
+      {/* ── 标题栏 ── */}
       <div className="flex justify-between items-center mb-4">
         <div>
           <h2 className="text-2xl font-semibold">内饰零部件示意图</h2>
-          <p className="text-sm text-gray-600 mt-1">
-            {isEditMode ? (editingArea ? '点击部件属性进行编辑' : '点击部件选择编辑，或拖动调整位置') : '点击图中的各个区域查看零部件用材信息'}
+          <p className="text-sm text-gray-500 mt-1">
+            点击区域选中 · 再次拖动可移位 · 拖动蓝色手柄可调整大小
           </p>
         </div>
-        <div className="flex gap-2">
-          {isEditMode && (
-            <>
-              <button
-                onClick={handleAddArea}
-                className="px-4 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
-              >
-                + 添加部件
-              </button>
-              <button
-                onClick={handleResetAreas}
-                className="px-4 py-2 bg-gray-600 text-white text-sm rounded hover:bg-gray-700 transition-colors"
-              >
-                重置
-              </button>
-            </>
-          )}
+        <div className="flex gap-2 items-center flex-wrap justify-end">
+          <button onClick={() => setScale(p => Math.max(p / 1.2, 0.5))}
+            className="px-3 py-1 bg-white border border-gray-300 rounded hover:bg-gray-50 text-sm">🔍−</button>
+          <span className="text-sm font-medium text-gray-700 min-w-[52px] text-center">{Math.round(scale * 100)}%</span>
+          <button onClick={() => setScale(p => Math.min(p * 1.2, 3))}
+            className="px-3 py-1 bg-white border border-gray-300 rounded hover:bg-gray-50 text-sm">🔍+</button>
+          <button onClick={() => { setScale(1); setPan({ x: 0, y: 0 }); }}
+            className="px-3 py-1 bg-white border border-gray-300 rounded hover:bg-gray-50 text-sm">重置视图</button>
           <button
-            onClick={() => {
-              setIsEditMode(!isEditMode);
-              setEditingArea(null);
-            }}
-            className={`px-4 py-2 text-sm rounded transition-colors ${
-              isEditMode
-                ? 'bg-blue-600 text-white hover:bg-blue-700'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            {isEditMode ? '退出编辑' : '编辑布局'}
+            onClick={() => { setZones(INITIAL_ZONES.map(z => ({ ...z }))); setSelectedId(null); setSelectedPart(null); }}
+            className="px-3 py-1 bg-orange-500 text-white rounded hover:bg-orange-600 text-sm">
+            重置布局
           </button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* SVG 示意图 */}
+        {/* ── SVG 示意图 ── */}
         <div className="lg:col-span-2">
-          {/* 缩放控制栏 */}
-          <div className="mb-3 flex items-center justify-between bg-gray-100 p-3 rounded-lg border border-gray-300">
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleZoomOut}
-                className="px-3 py-1 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors"
-                title="缩小 (滚轮向下)"
-              >
-                🔍−
-              </button>
-              <span className="text-sm font-medium text-gray-700 min-w-[60px] text-center">
-                {Math.round(scale * 100)}%
-              </span>
-              <button
-                onClick={handleZoomIn}
-                className="px-3 py-1 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors"
-                title="放大 (滚轮向上)"
-              >
-                🔍+
-              </button>
-              <button
-                onClick={handleResetView}
-                className="px-3 py-1 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors text-sm"
-                title="重置视图"
-              >
-                重置
-              </button>
-            </div>
-            <div className="text-xs text-gray-600">
-              💡 使用鼠标滚轮缩放 | Ctrl+左键拖动平移
-            </div>
-          </div>
-
-          {/* SVG容器 */}
           <div
             ref={containerRef}
-            className="relative overflow-hidden border-2 border-gray-300 rounded-lg bg-gradient-to-br from-gray-50 to-gray-100"
+            className="relative overflow-hidden border-2 border-gray-200 rounded-lg"
             style={{
-              cursor: isPanning ? 'grabbing' : 'grab',
-              height: '600px'
+              cursor: isPanning ? 'grabbing' : dragRef.current ? 'crosshair' : 'default',
+              height: '530px',
+              background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
             }}
-            onWheel={handleWheel}
-            onMouseDown={handlePanStart}
-            onMouseMove={(e) => {
-              handlePanMove(e as any);
-              handleMouseMove(e as any);
-            }}
-            onMouseUp={() => {
-              handlePanEnd();
-              handleMouseUp();
-            }}
-            onMouseLeave={() => {
-              handlePanEnd();
-              handleMouseUp();
-            }}
+            onWheel={e => { e.preventDefault(); setScale(p => Math.min(Math.max(0.5, p * (e.deltaY > 0 ? 0.9 : 1.1)), 3)); }}
+            onMouseDown={onContainerMD}
+            onMouseMove={onMouseMove}
+            onMouseUp={onMouseUp}
+            onMouseLeave={onMouseUp}
           >
             <svg
               ref={svgRef}
-              viewBox="0 0 800 600"
-              className="w-full h-full"
+              viewBox="0 0 820 500"
               style={{
+                width: '100%', height: '100%',
                 transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
                 transformOrigin: 'center',
-                transition: isPanning || draggingArea ? 'none' : 'transform 0.1s ease-out',
+                transition: isPanning ? 'none' : 'transform 0.1s ease-out',
+                fontFamily: 'inherit',
               }}
             >
-              {areas.map(area => renderArea(area))}
-              <text x="400" y="580" textAnchor="middle" className="fill-gray-500 text-xs pointer-events-none">
-                {isEditMode ? (editingArea ? '编辑右侧属性调整部件' : '点击选择部件，拖动移动位置') : '鼠标滚轮缩放 | 点击各区域查看零部件详情'}
-              </text>
+              {/* ── 车轮廓（装饰） ── */}
+              <path d="M 30,108 Q 32,50 60,50 L 760,50 Q 788,50 790,90 L 790,108"
+                fill="none" stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="6,3"/>
+              <path d="M 30,108 L 30,445 L 790,445 L 790,108"
+                fill="none" stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="6,3"/>
+              <circle cx="145" cy="455" r="22" fill="none" stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="4,3"/>
+              <circle cx="145" cy="455" r="10" fill="#e2e8f0" stroke="#94a3b8" strokeWidth="1"/>
+              <circle cx="668" cy="455" r="22" fill="none" stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="4,3"/>
+              <circle cx="668" cy="455" r="10" fill="#e2e8f0" stroke="#94a3b8" strokeWidth="1"/>
+
+              {/* ── 背景色块 ── */}
+              {zones.map(zone => (
+                <rect key={`bg-${zone.id}`}
+                  x={zone.zoneX} y={zone.zoneY} width={zone.zoneW} height={zone.zoneH}
+                  rx={zone.rx ?? 0}
+                  fill={zone.bg}
+                  stroke={zone.color} strokeWidth="1.2"
+                />
+              ))}
+
+              {/* 中央座舱（不可点击） */}
+              <rect x="415" y="108" width="213" height="292" fill="#f8fafc" stroke="#e2e8f0" strokeWidth="1"/>
+              <text x="522" y="250" textAnchor="middle" fill="#94a3b8" fontSize="11" fontStyle="italic">座舱空间</text>
+              <text x="522" y="265" textAnchor="middle" fill="#94a3b8" fontSize="11" fontStyle="italic">（中央）</text>
+
+              {/* ── 区域内小标签 + 件数 ── */}
+              {zones.map(zone => {
+                const cx = zone.zoneX + zone.zoneW / 2;
+                const cy = zone.zoneY + zone.zoneH / 2;
+                const cnt = (interiorParts[zone.partType] || []).length;
+                return (
+                  <g key={`inner-${zone.id}`} style={{ pointerEvents: 'none' }}>
+                    <text x={cx} y={cy + 2} textAnchor="middle"
+                      fill={zone.color} fontSize="10" fontWeight="600" opacity="0.65">
+                      {zone.label}
+                    </text>
+                    {cnt > 0 && (
+                      <text x={cx} y={cy + 14} textAnchor="middle"
+                        fill={zone.color} fontSize="9" opacity="0.55">{cnt}件</text>
+                    )}
+                  </g>
+                );
+              })}
+
+              {/* ── 可交互层：悬停高亮 + 引线标注 ── */}
+              {zones.map(zone => {
+                const isHovered  = hoveredId  === zone.id;
+                const isSelected = selectedId === zone.id;
+                const isActive   = isHovered || isSelected;
+                const w = bw(zone.label);
+                const isTop = zone.labelY < 35;
+                const lineEndY = isTop ? zone.labelY + 11 : zone.labelY - 11;
+
+                return (
+                  <g key={zone.id}
+                    style={{ cursor: isSelected ? 'move' : 'pointer' }}
+                    onMouseDown={e => onZoneMD(e, zone)}
+                    onMouseEnter={() => setHoveredId(zone.id)}
+                    onMouseLeave={() => setHoveredId(null)}>
+
+                    {/* 点击热区（透明） */}
+                    <rect
+                      x={zone.zoneX} y={zone.zoneY} width={zone.zoneW} height={zone.zoneH}
+                      rx={zone.rx ?? 0}
+                      fill={zone.color} opacity={isActive ? 0.28 : 0}
+                      stroke={isSelected ? zone.color : 'none'} strokeWidth={isSelected ? 2 : 0}
+                    />
+
+                    {/* 引线 + 圆点 + 标签 */}
+                    <line x1={zone.dotX} y1={zone.dotY} x2={zone.labelX} y2={lineEndY}
+                      stroke={zone.color} strokeWidth={isActive ? 1.8 : 1.2} opacity={isActive ? 1 : 0.6}/>
+                    <circle cx={zone.dotX} cy={zone.dotY} r={isActive ? 4 : 3}
+                      fill={zone.color} opacity={isActive ? 1 : 0.75}/>
+                    <rect x={zone.labelX - w/2} y={zone.labelY - 11} width={w} height="22" rx="4"
+                      fill={zone.color} opacity={isActive ? 1 : 0.82}/>
+                    <text x={zone.labelX} y={zone.labelY + 4} textAnchor="middle"
+                      fill="#fff" fontSize="11" fontWeight="700" style={{ pointerEvents: 'none' }}>
+                      {zone.label}
+                    </text>
+                  </g>
+                );
+              })}
+
+              {/* ── 选中区域：8个调整手柄 ── */}
+              {selZone && (
+                <g>
+                  {/* 选中外框（蓝色虚线） */}
+                  <rect
+                    x={selZone.zoneX - 3} y={selZone.zoneY - 3}
+                    width={selZone.zoneW + 6} height={selZone.zoneH + 6}
+                    rx={4} fill="none"
+                    stroke="#3b82f6" strokeWidth="1.5" strokeDasharray="5,3"
+                    style={{ pointerEvents: 'none' }}
+                  />
+                  {/* 尺寸提示 */}
+                  <text
+                    x={selZone.zoneX + selZone.zoneW / 2}
+                    y={selZone.zoneY - 8}
+                    textAnchor="middle" fill="#3b82f6" fontSize="9"
+                    style={{ pointerEvents: 'none' }}>
+                    {Math.round(selZone.zoneW)} × {Math.round(selZone.zoneH)}
+                  </text>
+                  {/* 8个调整手柄 */}
+                  {HANDLES.map(dir => {
+                    const { x, y } = handlePos(selZone, dir);
+                    return (
+                      <rect key={dir}
+                        x={x - 4.5} y={y - 4.5} width="9" height="9" rx="2"
+                        fill="white" stroke="#3b82f6" strokeWidth="1.5"
+                        style={{ cursor: CURSOR_MAP[dir] }}
+                        onMouseDown={e => onHandleMD(e, selZone.id, dir)}
+                      />
+                    );
+                  })}
+                </g>
+              )}
+
+              {/* 外框 */}
+              <rect x="40" y="55" width="740" height="385" rx="4"
+                fill="none" stroke="#d1d5db" strokeWidth="1.5" style={{ pointerEvents: 'none' }}/>
             </svg>
           </div>
+
+          {/* 当前选中位置信息 */}
+          {selZone && (
+            <div className="mt-2 flex items-center gap-4 text-xs text-gray-500 bg-gray-50 rounded px-3 py-1.5 border border-gray-200">
+              <span className="font-medium" style={{ color: selZone.color }}>{selZone.label}</span>
+              <span>位置 X:{Math.round(selZone.zoneX)} Y:{Math.round(selZone.zoneY)}</span>
+              <span>大小 {Math.round(selZone.zoneW)} × {Math.round(selZone.zoneH)}</span>
+              <span className="text-gray-400">· 拖动区域移位 · 拖动手柄调整大小 · 点击空白处取消选中</span>
+            </div>
+          )}
+          {!selZone && (
+            <p className="text-xs text-gray-400 mt-1 text-center">
+              滚轮缩放 | Ctrl+左键拖动平移 | 点击区域选中后可拖动调整
+            </p>
+          )}
         </div>
 
-        {/* 右侧面板 */}
-        <div className="lg:col-span-1">
-          {editingAreaData && isEditMode ? (
-            <div className="bg-amber-50 rounded-lg p-4 border-2 border-amber-300 space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold text-amber-900">编辑部件属性</h3>
-                <button
-                  onClick={() => setEditingArea(null)}
-                  className="text-amber-700 hover:text-amber-900 text-xl font-bold"
-                >
-                  ×
-                </button>
-              </div>
-
-              {/* 部件名称 */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">部件名称</label>
-                <input
-                  type="text"
-                  value={editingAreaData.label}
-                  onChange={(e) => editingArea && updateAreaProperty(editingArea, 'label', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-amber-500"
-                />
-              </div>
-
-              {/* 形状类型 */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">形状类型</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {(['rect', 'ellipse', 'circle'] as const).map(type => (
-                    <button
-                      key={type}
-                      onClick={() => editingArea && changeAreaType(editingArea, type)}
-                      className={`px-3 py-2 text-sm rounded border-2 transition-colors ${
-                        editingAreaData.type === type
-                          ? 'bg-amber-100 border-amber-500 text-amber-900'
-                          : 'bg-white border-gray-300 text-gray-700 hover:border-amber-300'
-                      }`}
-                    >
-                      {type === 'rect' ? '矩形' : type === 'ellipse' ? '椭圆' : '圆形'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* 位置和尺寸 */}
-              {editingAreaData.type === 'rect' && (
-                <>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">X 坐标</label>
-                      <input
-                        type="number"
-                        value={Math.round(editingAreaData.x || 0)}
-                        onChange={(e) => updateAreaProperty(editingArea, 'x', Number(e.target.value))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-amber-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Y 坐标</label>
-                      <input
-                        type="number"
-                        value={Math.round(editingAreaData.y || 0)}
-                        onChange={(e) => updateAreaProperty(editingArea, 'y', Number(e.target.value))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-amber-500"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">宽度</label>
-                      <input
-                        type="number"
-                        value={Math.round(editingAreaData.width || 0)}
-                        onChange={(e) => updateAreaProperty(editingArea, 'width', Number(e.target.value))}
-                        min="10"
-                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-amber-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">高度</label>
-                      <input
-                        type="number"
-                        value={Math.round(editingAreaData.height || 0)}
-                        onChange={(e) => updateAreaProperty(editingArea, 'height', Number(e.target.value))}
-                        min="10"
-                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-amber-500"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">圆角半径</label>
-                    <input
-                      type="number"
-                      value={Math.round(editingAreaData.rx || 0)}
-                      onChange={(e) => updateAreaProperty(editingArea, 'rx', Number(e.target.value))}
-                      min="0"
-                      className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-amber-500"
-                    />
-                  </div>
-                </>
-              )}
-
-              {editingAreaData.type === 'ellipse' && (
-                <>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">中心 X</label>
-                      <input
-                        type="number"
-                        value={Math.round(editingAreaData.cx || 0)}
-                        onChange={(e) => updateAreaProperty(editingArea, 'cx', Number(e.target.value))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-amber-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">中心 Y</label>
-                      <input
-                        type="number"
-                        value={Math.round(editingAreaData.cy || 0)}
-                        onChange={(e) => updateAreaProperty(editingArea, 'cy', Number(e.target.value))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-amber-500"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">横向半径</label>
-                      <input
-                        type="number"
-                        value={Math.round(editingAreaData.rx || 0)}
-                        onChange={(e) => updateAreaProperty(editingArea, 'rx', Number(e.target.value))}
-                        min="10"
-                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-amber-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">纵向半径</label>
-                      <input
-                        type="number"
-                        value={Math.round(editingAreaData.ry || 0)}
-                        onChange={(e) => updateAreaProperty(editingArea, 'ry', Number(e.target.value))}
-                        min="10"
-                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-amber-500"
-                      />
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {editingAreaData.type === 'circle' && (
-                <>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">中心 X</label>
-                      <input
-                        type="number"
-                        value={Math.round(editingAreaData.cx || 0)}
-                        onChange={(e) => updateAreaProperty(editingArea, 'cx', Number(e.target.value))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-amber-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">中心 Y</label>
-                      <input
-                        type="number"
-                        value={Math.round(editingAreaData.cy || 0)}
-                        onChange={(e) => updateAreaProperty(editingArea, 'cy', Number(e.target.value))}
-                        className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-amber-500"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">半径</label>
-                    <input
-                      type="number"
-                      value={Math.round(editingAreaData.r || 0)}
-                      onChange={(e) => updateAreaProperty(editingArea, 'r', Number(e.target.value))}
-                      min="10"
-                      className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-amber-500"
-                    />
-                  </div>
-                </>
-              )}
-
-              <button
-                onClick={() => editingArea && handleDeleteArea(editingArea)}
-                className="w-full px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
-              >
-                删除此部件
-              </button>
-            </div>
-          ) : selectedPart && !isEditMode ? (
+        {/* ── 右侧详情面板 ── */}
+        <div className="lg:col-span-1 flex flex-col gap-3">
+          {selectedPart ? (
             <div className="bg-blue-50 rounded-lg p-4 border-2 border-blue-200">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">{selectedPart.name}</h3>
-              {selectedPart.nameEn && (
-                <p className="text-sm text-gray-600 mb-3">{selectedPart.nameEn}</p>
-              )}
-
+              {selectedPart.nameEn && <p className="text-sm text-gray-600 mb-2">{selectedPart.nameEn}</p>}
               {selectedPart.description && (
-                <div className="mb-4">
+                <div className="mb-3">
                   <p className="text-xs font-medium text-gray-700 mb-1">零部件描述：</p>
                   <p className="text-sm text-gray-600">{selectedPart.description}</p>
                 </div>
               )}
-
               {selectedPart.function && (
-                <div className="mb-4">
+                <div className="mb-3">
                   <p className="text-xs font-medium text-gray-700 mb-1">功能说明：</p>
                   <p className="text-sm text-gray-600">{selectedPart.function}</p>
                 </div>
               )}
-
               <div className="mb-3">
                 <p className="text-xs font-medium text-gray-700 mb-2">使用材料：</p>
                 <div className="space-y-2">
-                  {getPartMaterials(selectedPart).map(material => (
-                    <div key={material.id} className="bg-white rounded p-2 border border-blue-300">
-                      <p className="font-medium text-sm text-gray-900">{material.name}</p>
-                      {material.nameEn && (
-                        <p className="text-xs text-gray-500">{material.nameEn}</p>
-                      )}
-                      {material.description && (
-                        <p className="text-xs text-gray-600 mt-1">{material.description}</p>
-                      )}
+                  {((part: Part) => materials.filter(m => part.materials.includes(m.id)))(selectedPart).map(m => (
+                    <div key={m.id} className="bg-white rounded p-2 border border-blue-200">
+                      <p className="font-medium text-sm text-gray-900">{m.name}</p>
+                      {m.nameEn && <p className="text-xs text-gray-500">{m.nameEn}</p>}
+                      {m.description && <p className="text-xs text-gray-600 mt-1">{m.description}</p>}
                     </div>
                   ))}
                 </div>
               </div>
-
               <div className="flex gap-2 mt-3">
                 {onPartEdit && (
-                  <button
-                    onClick={() => onPartEdit(selectedPart)}
-                    className="flex-1 px-4 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
-                  >
+                  <button onClick={() => onPartEdit(selectedPart)}
+                    className="flex-1 px-3 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700">
                     编辑零部件
                   </button>
                 )}
-                <button
-                  onClick={() => onPartClick(selectedPart)}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
-                >
+                <button onClick={() => onPartClick(selectedPart)}
+                  className="flex-1 px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
                   查看完整详情
                 </button>
               </div>
             </div>
-          ) : isEditMode ? (
-            <div className="bg-yellow-50 rounded-lg p-6 border-2 border-yellow-200">
-              <h3 className="text-lg font-semibold text-yellow-900 mb-3">编辑模式说明</h3>
-              <ul className="space-y-2 text-sm text-yellow-800">
-                <li className="flex items-start gap-2">
-                  <span className="text-yellow-600">•</span>
-                  <span>点击部件选择并编辑其属性</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-yellow-600">•</span>
-                  <span>拖动部件可调整位置（未选中状态）</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-yellow-600">•</span>
-                  <span>可修改名称、形状、大小等属性</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-yellow-600">•</span>
-                  <span>点击"添加部件"创建新区域</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-yellow-600">•</span>
-                  <span>所有更改自动保存</span>
-                </li>
-              </ul>
+          ) : selectedId ? (
+            <div className="bg-gray-50 rounded-lg p-5 border-2 border-gray-200 text-center">
+              <p className="text-gray-500 text-sm">该区域暂无零部件数据</p>
+              <p className="text-gray-400 text-xs mt-1">{selZone?.label}</p>
             </div>
           ) : (
-            <div className="bg-gray-50 rounded-lg p-6 border-2 border-gray-200 text-center">
-              <p className="text-gray-500 text-sm">请点击左侧示意图中的任意区域</p>
-              <p className="text-gray-400 text-xs mt-2">查看零部件的材料信息</p>
+            <div className="bg-gray-50 rounded-lg p-5 border-2 border-gray-200 text-center">
+              <p className="text-gray-500 text-sm">点击示意图中的区域</p>
+              <p className="text-gray-400 text-xs mt-1">查看该区域的零部件信息</p>
             </div>
           )}
-        </div>
-      </div>
 
-      {/* 零部件列表 */}
-      <div className="mt-8">
-        <h3 className="text-lg font-semibold mb-4">所有内饰零部件</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          {Object.entries({
-            '仪表板': interiorParts.dashboard,
-            '门板': interiorParts.door,
-            '中控': interiorParts.cnsl,
-            '立柱': interiorParts.pillar,
-            '顶棚': interiorParts.headliner,
-            '地毯': interiorParts.carpet,
-          }).map(([label, partsList]) => (
+          {/* ── 图例 ── */}
+          <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+            <p className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">区域图例</p>
+            <div className="grid grid-cols-2 gap-1">
+              {zones.map(zone => {
+                const count = (interiorParts[zone.partType] || []).length;
+                const isActive = selectedId === zone.id;
+                return (
+                  <button key={zone.id}
+                    onClick={() => selectZone(zone.id)}
+                    className={`flex items-center gap-1.5 px-2 py-1.5 rounded text-left transition-all ${
+                      isActive ? 'bg-white shadow-sm ring-1 ring-blue-200' : 'hover:bg-white'
+                    }`}>
+                    <span className="w-3 h-3 rounded-sm flex-shrink-0"
+                      style={{ background: zone.bg, border: `2px solid ${zone.color}` }}/>
+                    <span className="text-xs text-gray-700 truncate flex-1">{zone.label}</span>
+                    {count > 0 && (
+                      <span style={{ color: zone.color }} className="text-xs font-semibold">{count}</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 点击空白取消选中 */}
+          {selectedId && (
             <button
-              key={label}
-              onClick={() => !isEditMode && partsList.length > 0 && setSelectedPart(partsList[0])}
-              disabled={isEditMode}
-              className={`px-3 py-2 bg-white border-2 border-gray-300 rounded-lg transition-all text-sm ${
-                isEditMode
-                  ? 'opacity-50 cursor-not-allowed'
-                  : 'hover:border-blue-500 hover:bg-blue-50'
-              }`}
-            >
-              <div className="font-medium text-gray-900">{label}</div>
-              <div className="text-xs text-gray-500">{partsList.length} 个部件</div>
+              onClick={() => { setSelectedId(null); setSelectedPart(null); }}
+              className="text-xs text-gray-400 hover:text-gray-600 text-center py-1">
+              取消选中
             </button>
-          ))}
+          )}
         </div>
       </div>
     </div>

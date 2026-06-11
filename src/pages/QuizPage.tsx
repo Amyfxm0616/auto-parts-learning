@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Settings, ChevronRight, ChevronDown, FileText, CheckSquare, AlignLeft, List, BookOpen, PlayCircle, Clock, Trophy, TrendingDown, AlertCircle } from 'lucide-react';
+import { Settings, ChevronRight, ChevronDown, FileText, CheckSquare, AlignLeft, List, BookOpen, PlayCircle, Clock } from 'lucide-react';
 import { getQuestions, initializeQuestions } from '../data/questions';
 import type { Question } from '../data/questions';
 import { checkAndStoreAdminToken, isAdmin } from '../utils/adminAuth';
+import { buildSession, saveSession, getSessions } from '../data/quizHistory';
+import type { QuizSession } from '../data/quizHistory';
+import QuizReport from '../components/QuizReport';
+import QuizHistory from '../components/QuizHistory';
 
 interface QuizRecord {
   id: string;
@@ -42,6 +46,9 @@ export default function QuizPage() {
   }, [searchParams]);
   const [expandedTypes, setExpandedTypes] = useState<Set<string>>(new Set(['fill', 'boolean']));
 
+  // 选题页 Tab
+  const [activeTab, setActiveTab] = useState<'quiz' | 'history'>('quiz');
+
   // 测验状态
   const [isQuizStarted, setIsQuizStarted] = useState(false);
   const [selectedType, setSelectedType] = useState<QuestionType>('all');
@@ -57,6 +64,7 @@ export default function QuizPage() {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [isQuizFinished, setIsQuizFinished] = useState(false);
   const [sessionRecords, setSessionRecords] = useState<QuizRecord[]>([]);
+  const [currentSession, setCurrentSession] = useState<QuizSession | null>(null);
 
   useEffect(() => {
     initializeQuestions();
@@ -121,6 +129,7 @@ export default function QuizPage() {
     setSessionRecords([]);
     setQuizStartTime(null);
     setElapsedSeconds(0);
+    setCurrentSession(null);
   };
 
   const checkAnswer = () => {
@@ -211,117 +220,140 @@ export default function QuizPage() {
           )}
         </div>
 
-        {/* 统计 */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-5 mb-6 grid grid-cols-3 gap-4">
-          {[
-            { val: stats.total,    label: '已答题数', color: 'text-blue-600' },
-            { val: stats.correct,  label: '答对题数', color: 'text-green-600' },
-            { val: `${stats.accuracy}%`, label: '正确率', color: 'text-purple-600' },
-          ].map(s => (
-            <div key={s.label} className="text-center">
-              <div className={`text-3xl font-bold ${s.color}`}>{s.val}</div>
-              <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">{s.label}</div>
-            </div>
+        {/* Tab 切换 */}
+        <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-xl p-1 mb-6">
+          {(['quiz', 'history'] as const).map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === tab
+                  ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+              }`}
+            >
+              {tab === 'quiz' ? '📝 练习测验' : '📊 历史记录'}
+            </button>
           ))}
         </div>
 
-        {/* 全部题目快速入口 */}
-        <div className="mb-4">
-          <button
-            onClick={() => startQuiz('all')}
-            disabled={allQuestions.length === 0}
-            className="w-full flex items-center justify-between px-5 py-4 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white rounded-xl shadow transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <BookOpen size={20} />
-              <span className="font-semibold text-lg">全部题目</span>
-              <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">
-                {allQuestions.length} 题
-              </span>
-            </div>
-            <PlayCircle size={22} />
-          </button>
-        </div>
-
-        {/* 树状题型列表 */}
-        <div className="space-y-3">
-          {typeOrder.map(type => {
-            const cfg = TYPE_CONFIG[type];
-            const typeQuestions = allQuestions.filter(q => q.type === type);
-            const isExpanded = expandedTypes.has(type);
-            const byDifficulty = {
-              easy:   typeQuestions.filter(q => q.difficulty === 'easy'),
-              medium: typeQuestions.filter(q => q.difficulty === 'medium'),
-              hard:   typeQuestions.filter(q => q.difficulty === 'hard'),
-            };
-
-            return (
-              <div key={type} className={`rounded-xl border ${cfg.border} overflow-hidden`}>
-                {/* 题型节点 */}
-                <div className={`flex items-center ${cfg.bg} dark:bg-gray-800`}>
-                  {/* 展开/折叠按钮 */}
-                  <button
-                    onClick={() => toggleType(type)}
-                    className="flex items-center gap-3 flex-1 px-5 py-4 text-left"
-                  >
-                    <span className={cfg.color}>
-                      {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-                    </span>
-                    <span className={`${cfg.color}`}>{cfg.icon}</span>
-                    <span className={`font-semibold ${cfg.color}`}>{cfg.label}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full border ${cfg.border} ${cfg.color}`}>
-                      {typeQuestions.length} 题
-                    </span>
-                  </button>
-                  {/* 直接开始按钮 */}
-                  <button
-                    onClick={() => startQuiz(type)}
-                    disabled={typeQuestions.length === 0}
-                    className={`flex items-center gap-1 mr-4 px-3 py-1.5 rounded-lg text-sm font-medium border ${cfg.border} ${cfg.color} hover:opacity-80 disabled:opacity-30 disabled:cursor-not-allowed transition-opacity`}
-                  >
-                    <PlayCircle size={15} /> 开始
-                  </button>
+        {activeTab === 'history' ? (
+          <QuizHistory />
+        ) : (
+          <>
+            {/* 统计 */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-5 mb-6 grid grid-cols-3 gap-4">
+              {[
+                { val: stats.total,    label: '已答题数', color: 'text-blue-600' },
+                { val: stats.correct,  label: '答对题数', color: 'text-green-600' },
+                { val: `${stats.accuracy}%`, label: '正确率', color: 'text-purple-600' },
+              ].map(s => (
+                <div key={s.label} className="text-center">
+                  <div className={`text-3xl font-bold ${s.color}`}>{s.val}</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">{s.label}</div>
                 </div>
+              ))}
+            </div>
 
-                {/* 展开后：按难度细分 */}
-                {isExpanded && typeQuestions.length > 0 && (
-                  <div className="bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-700">
-                    {(['easy', 'medium', 'hard'] as const).map(diff => {
-                      const qs = byDifficulty[diff];
-                      if (qs.length === 0) return null;
-                      return (
-                        <button
-                          key={diff}
-                          onClick={() => startQuiz(type, diff)}
-                          className="w-full flex items-center justify-between px-8 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-left"
-                        >
-                          <div className="flex items-center gap-3">
-                            <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
-                            <span className={`text-sm font-medium ${
-                              diff === 'easy' ? 'text-green-700' :
-                              diff === 'medium' ? 'text-yellow-700' : 'text-red-700'
-                            }`}>
-                              {DIFFICULTY_LABEL[diff]}
-                            </span>
-                            <span className="text-xs text-gray-400">{qs.length} 题</span>
-                          </div>
-                          <ChevronRight size={14} className="text-gray-400" />
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
+            {/* 全部题目快速入口 */}
+            <div className="mb-4">
+              <button
+                onClick={() => startQuiz('all')}
+                disabled={allQuestions.length === 0}
+                className="w-full flex items-center justify-between px-5 py-4 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white rounded-xl shadow transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <BookOpen size={20} />
+                  <span className="font-semibold text-lg">全部题目</span>
+                  <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">
+                    {allQuestions.length} 题
+                  </span>
+                </div>
+                <PlayCircle size={22} />
+              </button>
+            </div>
 
-                {/* 空题型提示 */}
-                {isExpanded && typeQuestions.length === 0 && (
-                  <div className="bg-white dark:bg-gray-900 px-8 py-3 text-sm text-gray-400">
-                    暂无题目，可前往题库管理添加
+            {/* 树状题型列表 */}
+            <div className="space-y-3">
+              {typeOrder.map(type => {
+                const cfg = TYPE_CONFIG[type];
+                const typeQuestions = allQuestions.filter(q => q.type === type);
+                const isExpanded = expandedTypes.has(type);
+                const byDifficulty = {
+                  easy:   typeQuestions.filter(q => q.difficulty === 'easy'),
+                  medium: typeQuestions.filter(q => q.difficulty === 'medium'),
+                  hard:   typeQuestions.filter(q => q.difficulty === 'hard'),
+                };
+
+                return (
+                  <div key={type} className={`rounded-xl border ${cfg.border} overflow-hidden`}>
+                    {/* 题型节点 */}
+                    <div className={`flex items-center ${cfg.bg} dark:bg-gray-800`}>
+                      {/* 展开/折叠按钮 */}
+                      <button
+                        onClick={() => toggleType(type)}
+                        className="flex items-center gap-3 flex-1 px-5 py-4 text-left"
+                      >
+                        <span className={cfg.color}>
+                          {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                        </span>
+                        <span className={`${cfg.color}`}>{cfg.icon}</span>
+                        <span className={`font-semibold ${cfg.color}`}>{cfg.label}</span>
+                        <span className={`text-xs px-2 py-0.5 rounded-full border ${cfg.border} ${cfg.color}`}>
+                          {typeQuestions.length} 题
+                        </span>
+                      </button>
+                      {/* 直接开始按钮 */}
+                      <button
+                        onClick={() => startQuiz(type)}
+                        disabled={typeQuestions.length === 0}
+                        className={`flex items-center gap-1 mr-4 px-3 py-1.5 rounded-lg text-sm font-medium border ${cfg.border} ${cfg.color} hover:opacity-80 disabled:opacity-30 disabled:cursor-not-allowed transition-opacity`}
+                      >
+                        <PlayCircle size={15} /> 开始
+                      </button>
+                    </div>
+
+                    {/* 展开后：按难度细分 */}
+                    {isExpanded && typeQuestions.length > 0 && (
+                      <div className="bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-700">
+                        {(['easy', 'medium', 'hard'] as const).map(diff => {
+                          const qs = byDifficulty[diff];
+                          if (qs.length === 0) return null;
+                          return (
+                            <button
+                              key={diff}
+                              onClick={() => startQuiz(type, diff)}
+                              className="w-full flex items-center justify-between px-8 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-left"
+                            >
+                              <div className="flex items-center gap-3">
+                                <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
+                                <span className={`text-sm font-medium ${
+                                  diff === 'easy' ? 'text-green-700' :
+                                  diff === 'medium' ? 'text-yellow-700' : 'text-red-700'
+                                }`}>
+                                  {DIFFICULTY_LABEL[diff]}
+                                </span>
+                                <span className="text-xs text-gray-400">{qs.length} 题</span>
+                              </div>
+                              <ChevronRight size={14} className="text-gray-400" />
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* 空题型提示 */}
+                    {isExpanded && typeQuestions.length === 0 && (
+                      <div className="bg-white dark:bg-gray-900 px-8 py-3 text-sm text-gray-400">
+                        暂无题目，可前往题库管理添加
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
     );
   }
@@ -331,155 +363,15 @@ export default function QuizPage() {
     `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 
   // ─── 结果页 ───────────────────────────────────────────────────
-  if (isQuizFinished) {
-    const totalQ = sessionRecords.length;
-    const correctQ = sessionRecords.filter(r => r.isCorrect).length;
-    const wrongQ = totalQ - correctQ;
-    const accuracy = totalQ > 0 ? Math.round((correctQ / totalQ) * 100) : 0;
-
-    // 按知识点/材料分类统计（category → 第一个tag → 题型名）
-    const questionMap = new Map(allQuestions.map(q => [q.id, q]));
-    const TYPE_LABEL: Record<string, string> = {
-      single: '单选题', multiple: '多选题', boolean: '判断题', fill: '填空题', essay: '简答题',
-    };
-    type GroupStat = { wrong: number; total: number };
-    const groups = new Map<string, GroupStat>();
-    sessionRecords.forEach(r => {
-      const q = questionMap.get(r.questionId);
-      if (!q) return;
-      const label = (q.category && q.category !== '') ? q.category
-        : (q.tags && q.tags.length > 0) ? q.tags[0]
-        : TYPE_LABEL[q.type] || q.type;
-      if (!groups.has(label)) groups.set(label, { wrong: 0, total: 0 });
-      groups.get(label)!.total++;
-      if (!r.isCorrect) groups.get(label)!.wrong++;
-    });
-    const groupStats = Array.from(groups.entries())
-      .map(([label, s]) => ({ label, ...s, rate: s.total > 0 ? s.wrong / s.total : 0 }))
-      .sort((a, b) => b.rate - a.rate);
-    const weakest = groupStats.filter(g => g.wrong > 0);
-
-    // 成绩评级
-    const grade = accuracy >= 90 ? { text: '优秀', emoji: '🏆', cls: 'text-yellow-500' }
-      : accuracy >= 70 ? { text: '良好', emoji: '👍', cls: 'text-blue-500' }
-      : accuracy >= 50 ? { text: '需加强', emoji: '📚', cls: 'text-orange-500' }
-      : { text: '继续努力', emoji: '💪', cls: 'text-red-500' };
-
+  if (isQuizFinished && currentSession) {
     return (
-      <div className="px-4 py-8 max-w-3xl mx-auto space-y-5">
-        {/* 标题 */}
-        <div className="flex items-center gap-3 mb-2">
-          <Trophy size={28} className="text-yellow-500" />
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">本次测验结果</h1>
-        </div>
-
-        {/* 得分 & 用时 */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6 grid grid-cols-3 gap-4 text-center">
-          <div>
-            <div className="text-4xl font-bold text-blue-600">{correctQ}<span className="text-xl text-gray-400">/{totalQ}</span></div>
-            <div className="text-sm text-gray-500 mt-1">答对题数</div>
-          </div>
-          <div>
-            <div className={`text-4xl font-bold ${accuracy >= 70 ? 'text-green-600' : 'text-red-500'}`}>{accuracy}%</div>
-            <div className="text-sm text-gray-500 mt-1">正确率</div>
-          </div>
-          <div>
-            <div className="text-4xl font-bold text-purple-600">{formatTime(elapsedSeconds)}</div>
-            <div className="text-sm text-gray-500 mt-1">用时</div>
-          </div>
-        </div>
-
-        {/* 评级 */}
-        <div className={`flex items-center gap-3 px-5 py-4 rounded-xl border-2 ${
-          accuracy >= 90 ? 'border-yellow-300 bg-yellow-50 dark:bg-yellow-900/20' :
-          accuracy >= 70 ? 'border-blue-300 bg-blue-50 dark:bg-blue-900/20' :
-          accuracy >= 50 ? 'border-orange-300 bg-orange-50 dark:bg-orange-900/20' :
-          'border-red-300 bg-red-50 dark:bg-red-900/20'
-        }`}>
-          <span className="text-3xl">{grade.emoji}</span>
-          <div>
-            <div className={`text-lg font-bold ${grade.cls}`}>{grade.text}</div>
-            <div className="text-sm text-gray-500">
-              {accuracy >= 90 ? '表现出色，知识掌握非常扎实！' :
-               accuracy >= 70 ? '掌握较好，继续巩固薄弱知识点。' :
-               accuracy >= 50 ? '还需努力，建议重点复习错题涉及的材料知识。' :
-               '差距较大，建议系统性地重新学习相关材料知识。'}
-            </div>
-          </div>
-        </div>
-
-        {/* 错题材料分析 */}
-        {wrongQ > 0 && (
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <TrendingDown size={20} className="text-red-500" />
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">错题分析</h2>
-              <span className="text-sm text-gray-400">共 {wrongQ} 道错题</span>
-            </div>
-            <div className="space-y-3">
-              {groupStats.map(g => {
-                const errorPct = Math.round(g.rate * 100);
-                const barColor = g.rate >= 0.6 ? 'bg-red-500' : g.rate >= 0.3 ? 'bg-orange-400' : 'bg-yellow-400';
-                return (
-                  <div key={g.label}>
-                    <div className="flex justify-between items-center text-sm mb-1">
-                      <span className="font-medium text-gray-700 dark:text-gray-300">{g.label}</span>
-                      <span className="text-gray-500">
-                        {g.wrong}/{g.total} 错误 &nbsp;
-                        <span className={g.rate >= 0.6 ? 'text-red-500 font-semibold' : g.rate >= 0.3 ? 'text-orange-500 font-semibold' : 'text-yellow-600 font-semibold'}>
-                          {errorPct}%
-                        </span>
-                      </span>
-                    </div>
-                    <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2.5">
-                      <div className={`${barColor} h-2.5 rounded-full transition-all`} style={{ width: `${errorPct}%` }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* 加强建议 */}
-        {weakest.length > 0 && (
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-            <div className="flex items-center gap-2 mb-3">
-              <AlertCircle size={20} className="text-orange-500" />
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">建议加强学习</h2>
-            </div>
-            <ul className="space-y-2">
-              {weakest.slice(0, 4).map(g => (
-                <li key={g.label} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
-                  <span className="mt-0.5 text-orange-400">•</span>
-                  <span>
-                    <span className="font-semibold">{g.label}</span>
-                    {' '}—— 错误率 {Math.round(g.rate * 100)}%（{g.wrong}/{g.total} 题），
-                    {g.rate >= 0.6 ? '建议重点复习，系统梳理相关知识。' :
-                     g.rate >= 0.3 ? '建议回顾错题解析，强化记忆。' :
-                     '偶有失误，注意细节即可。'}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* 操作按钮 */}
-        <div className="flex gap-3 pt-2">
-          <button
-            onClick={() => { startQuiz(selectedType, selectedDifficulty); }}
-            className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors"
-          >
-            再做一遍
-          </button>
-          <button
-            onClick={handleRestart}
-            className="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 py-3 rounded-xl font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-          >
-            返回题库
-          </button>
-        </div>
+      <div className="px-4 py-8 max-w-3xl mx-auto">
+        <QuizReport
+          session={currentSession}
+          allSessions={getSessions()}
+          onRetry={() => startQuiz(selectedType, selectedDifficulty)}
+          onBack={handleRestart}
+        />
       </div>
     );
   }
@@ -714,7 +606,25 @@ export default function QuizPage() {
                 下一题
               </button>
             ) : (
-              <button onClick={() => setIsQuizFinished(true)}
+              <button onClick={() => {
+                const finishedAt = Date.now();
+                const questionMap = new Map(allQuestions.map(q => [q.id, q]));
+                const session = buildSession({
+                  sessionRecords: [...sessionRecords].map(r => ({
+                    questionId: r.questionId,
+                    userAnswer: r.userAnswer,
+                    isCorrect: r.isCorrect,
+                  })),
+                  questionMap,
+                  startedAt: quizStartTime ?? finishedAt - elapsedSeconds * 1000,
+                  finishedAt,
+                  quizType: selectedType,
+                  quizDifficulty: selectedDifficulty,
+                });
+                saveSession(session);
+                setCurrentSession(session);
+                setIsQuizFinished(true);
+              }}
                 className="flex-1 bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 transition-colors">
                 完成测验
               </button>

@@ -21,6 +21,9 @@ import QuizManagementPage from './pages/QuizManagementPage';
 import NotesPage from './pages/NotesPage';
 import Interior3DPage from './pages/Interior3DPage';
 import SharedPartPage from './pages/SharedPartPage';
+import EditableDiagramDemo from './pages/EditableDiagramDemo';
+import AdvancedDiagramDemo from './pages/AdvancedDiagramDemo';
+import RobotPage from './pages/RobotPage';
 import { isAdmin } from './utils/adminAuth';
 
 /** 管理页权限守卫：无权限则跳回练习测验页 */
@@ -51,6 +54,9 @@ function App() {
           <Route path="/quiz/manage" element={<AdminRoute><QuizManagementPage /></AdminRoute>} />
           <Route path="/notes" element={<NotesPage />} />
           <Route path="/interior-3d" element={<Interior3DPage />} />
+          <Route path="/editable-diagram" element={<EditableDiagramDemo />} />
+          <Route path="/advanced-diagram" element={<AdvancedDiagramDemo />} />
+          <Route path="/robot" element={<RobotPage />} />
         </Route>
 
         {/* Catch all route - redirect to home */}

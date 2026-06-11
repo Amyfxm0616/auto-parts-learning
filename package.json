@@ -2,13 +2,13 @@
   "name": "auto-parts-learning",
   "private": true,
   "version": "1.0.0",
-  "description": "汽车零部件材料学习平台",
+  "description": "汽车及智能穿戴材料学习平台",
   "author": "Auto Parts Team",
   "type": "module",
   "main": "dist-electron/main.js",
   "build": {
     "appId": "com.autoparts.learning",
-    "productName": "汽车零部件学习平台",
+    "productName": "汽车及智能穿戴材料学习平台",
     "directories": {
       "output": "release"
     },

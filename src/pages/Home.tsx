@@ -1,16 +1,19 @@
 import { Link } from 'react-router-dom';
 import { partSystems } from '../data/systems';
+import { materials } from '../data/materials';
+import { parts } from '../data/parts';
 
 export default function Home() {
+  const materialCategoryCount = new Set(materials.map((m) => m.category)).size;
   return (
     <div className="px-4 py-8">
       {/* Hero Section */}
       <div className="text-center mb-12">
         <h1 className="text-4xl font-bold text-gray-900 mb-4">
-          汽车零部件材料学习平台
+          汽车及智能穿戴材料学习平台
         </h1>
         <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-          探索汽车零部件与材料的奥秘，了解不同材料的特性及其在汽车工程中的应用
+          探索汽车零部件与智能穿戴设备材料的奥秘，了解不同材料的特性及其工程应用
         </p>
       </div>
 
@@ -152,20 +155,20 @@ export default function Home() {
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
         <div className="bg-blue-50 rounded-lg p-4 text-center">
-          <div className="text-3xl font-bold text-blue-600">10</div>
+          <div className="text-3xl font-bold text-blue-600">{parts.length}</div>
           <div className="text-sm text-gray-600 mt-1">零部件</div>
         </div>
         <div className="bg-green-50 rounded-lg p-4 text-center">
-          <div className="text-3xl font-bold text-green-600">8</div>
+          <div className="text-3xl font-bold text-green-600">{materialCategoryCount}</div>
           <div className="text-sm text-gray-600 mt-1">材料类型</div>
         </div>
         <div className="bg-purple-50 rounded-lg p-4 text-center">
-          <div className="text-3xl font-bold text-purple-600">5</div>
+          <div className="text-3xl font-bold text-purple-600">{partSystems.length}</div>
           <div className="text-sm text-gray-600 mt-1">系统分类</div>
         </div>
         <div className="bg-orange-50 rounded-lg p-4 text-center">
-          <div className="text-3xl font-bold text-orange-600">∞</div>
-          <div className="text-sm text-gray-600 mt-1">学习机会</div>
+          <div className="text-3xl font-bold text-orange-600">{materials.length}</div>
+          <div className="text-sm text-gray-600 mt-1">材料数据</div>
         </div>
       </div>
     </div>

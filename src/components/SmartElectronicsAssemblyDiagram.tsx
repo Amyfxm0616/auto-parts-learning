@@ -58,6 +58,7 @@ const zones: DiagramZone[] = [
 export default function SmartElectronicsAssemblyDiagram({
   assemblies,
   selectedAssemblyId,
+  selectedSubAssemblyId,
   onAssemblyClick,
   onSubAssemblyClick,
   onPartClick,
@@ -110,96 +111,165 @@ export default function SmartElectronicsAssemblyDiagram({
     0
   );
 
+  const selectedAssembly = selectedAssemblyId ? assemblies.find(a => a.id === selectedAssemblyId) : null;
+
   return (
-    <div className="bg-white rounded-lg border border-gray-200">
-      {/* 工具栏 */}
-      <div className="flex items-center gap-3 px-4 py-2 bg-gray-50 border-b border-gray-200 rounded-t-lg">
-        <button onClick={() => setScale(p => Math.max(p / 1.2, 0.4))} className="px-2 py-1 bg-white border border-gray-300 rounded text-sm hover:bg-gray-50">🔍−</button>
-        <span className="text-xs text-gray-600 min-w-[44px] text-center">{Math.round(scale * 100)}%</span>
-        <button onClick={() => setScale(p => Math.min(p * 1.2, 3))} className="px-2 py-1 bg-white border border-gray-300 rounded text-sm hover:bg-gray-50">🔍+</button>
-        <button onClick={() => { setScale(1); setPan({ x: 0, y: 0 }); }} className="px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700">重置</button>
-        <span className="text-xs text-gray-400 ml-1">💡 滚轮缩放 | Ctrl+拖动平移</span>
-        <span className="ml-auto text-xs text-gray-500">{assemblies.length} 个总成 · {totalParts} 个零件</span>
+    <div className="bg-white rounded-lg shadow p-4">
+      {/* 标题栏 */}
+      <div className="flex justify-between items-center mb-3">
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900">智能电器总成示意图</h2>
+          <p className="text-xs text-gray-500">
+            点击图上区域查看总成零件 | 滚轮缩放，Ctrl+拖动平移
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setScale(p => Math.max(p / 1.2, 0.4))} className="px-2 py-1 bg-white border border-gray-300 rounded text-sm hover:bg-gray-50">−</button>
+          <span className="text-sm font-medium text-gray-700 min-w-[50px] text-center">{Math.round(scale * 100)}%</span>
+          <button onClick={() => setScale(p => Math.min(p * 1.2, 3))} className="px-2 py-1 bg-white border border-gray-300 rounded text-sm hover:bg-gray-50">+</button>
+          <button onClick={() => { setScale(1); setPan({ x: 0, y: 0 }); }} className="px-3 py-1 bg-white border border-gray-300 rounded text-sm hover:bg-gray-50">重置</button>
+          <span className="ml-1 text-xs text-gray-500">{assemblies.length} 个总成 · {totalParts} 个零件</span>
+        </div>
       </div>
 
-      {/* SVG 图区 */}
-      <div
-        className="relative overflow-hidden bg-gradient-to-br from-slate-50 to-blue-50"
-        style={{ minHeight: 420, cursor: isPanning ? 'grabbing' : 'grab' }}
-        onWheel={handleWheel}
-        onMouseDown={handlePanStart}
-        onMouseMove={handlePanMove}
-        onMouseUp={handlePanEnd}
-        onMouseLeave={handlePanEnd}
-      >
-        <svg
-          ref={svgRef}
-          viewBox="0 0 750 580"
-          className="w-full h-auto"
-          style={{
-            transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
-            transition: isPanning ? 'none' : 'transform 0.15s ease-out',
-            transformOrigin: 'center center',
-          }}
-        >
-          {/* 车身轮廓 */}
-          <path
-            d="M 70 440 L 100 360 L 120 280 L 170 200 L 260 150 L 490 150 L 600 200 L 650 280 L 680 380 L 680 480 L 620 520 L 130 520 Z"
-            fill="none" stroke="#d1d5db" strokeWidth="2" strokeDasharray="6,4"
-          />
-          {/* 车顶分隔线 */}
-          <line x1="230" y1="150" x2="230" y2="90" stroke="#e5e7eb" strokeWidth="1" strokeDasharray="3,3" />
-          <line x1="520" y1="150" x2="520" y2="90" stroke="#e5e7eb" strokeWidth="1" strokeDasharray="3,3" />
+      {/* 图 + 右侧信息面板 */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* SVG 图区 */}
+        <div className="lg:col-span-2">
+          <div
+            className="relative overflow-hidden border border-gray-200 rounded-lg bg-gradient-to-br from-slate-50 to-blue-50"
+            style={{ height: 380, cursor: isPanning ? 'grabbing' : 'grab' }}
+            onWheel={handleWheel}
+            onMouseDown={handlePanStart}
+            onMouseMove={handlePanMove}
+            onMouseUp={handlePanEnd}
+            onMouseLeave={handlePanEnd}
+          >
+            <svg
+              ref={svgRef}
+              viewBox="0 0 750 580"
+              className="w-full h-full"
+              style={{
+                transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
+                transition: isPanning ? 'none' : 'transform 0.15s ease-out',
+                transformOrigin: 'center center',
+              }}
+            >
+              {/* 车身轮廓 */}
+              <path
+                d="M 70 440 L 100 360 L 120 280 L 170 200 L 260 150 L 490 150 L 600 200 L 650 280 L 680 380 L 680 480 L 620 520 L 130 520 Z"
+                fill="none" stroke="#d1d5db" strokeWidth="2" strokeDasharray="6,4"
+              />
+              {/* 车顶分隔线 */}
+              <line x1="230" y1="150" x2="230" y2="90" stroke="#e5e7eb" strokeWidth="1" strokeDasharray="3,3" />
+              <line x1="520" y1="150" x2="520" y2="90" stroke="#e5e7eb" strokeWidth="1" strokeDasharray="3,3" />
 
-          {/* 标题 */}
-          <text x="375" y="570" textAnchor="middle" fontSize="11" fill="#9ca3af">智能电器系统分布示意图（点击区域查看零件）</text>
+              {/* 底部说明 */}
+              <text x="375" y="570" textAnchor="middle" fontSize="11" fill="#9ca3af">智能电器系统分布示意图</text>
 
-          {/* 渲染各区域 */}
-          {zones.map((zone) => {
-            const fill = getZoneFill(zone);
-            const isSelected = selectedAssemblyId === zone.assemblyId;
-            const strokeColor = isSelected ? '#3b82f6' : '#6b7280';
-            const strokeWidth = isSelected ? 2.5 : 1.5;
-            const assembly = assemblies.find(a => a.id === zone.assemblyId);
-            const partCount = assembly?.subAssemblies.reduce((s, sub) => s + sub.parts.length, 0) ?? 0;
+              {/* 渲染各区域 */}
+              {zones.map((zone) => {
+                const fill = getZoneFill(zone);
+                const isSelected = selectedAssemblyId === zone.assemblyId;
+                const strokeColor = isSelected ? '#3b82f6' : '#6b7280';
+                const strokeWidth = isSelected ? 2.5 : 1.5;
+                const assembly = assemblies.find(a => a.id === zone.assemblyId);
+                const partCount = assembly?.subAssemblies.reduce((s, sub) => s + sub.parts.length, 0) ?? 0;
 
-            return (
-              <g key={zone.id} className="cursor-pointer" onClick={() => handleZoneClick(zone)}
-                onMouseEnter={() => setHoveredZone(zone.id)} onMouseLeave={() => setHoveredZone(null)}>
-                {zone.type === 'ellipse' ? (
-                  <ellipse cx={zone.cx} cy={zone.cy} rx={zone.rx} ry={zone.ry}
-                    fill={fill} stroke={strokeColor} strokeWidth={strokeWidth} rx2={8} />
-                ) : (
-                  <rect x={zone.x} y={zone.y} width={zone.width} height={zone.height}
-                    rx="8" fill={fill} stroke={strokeColor} strokeWidth={strokeWidth} />
-                )}
-                {/* 图标 */}
-                <text
-                  x={zone.type === 'ellipse' ? zone.cx : (zone.x! + zone.width! / 2)}
-                  y={zone.type === 'ellipse' ? (zone.cy! - 10) : (zone.y! + zone.height! / 2 - 6)}
-                  textAnchor="middle" fontSize="16" className="pointer-events-none select-none"
-                >{zone.icon}</text>
-                {/* 名称 */}
-                <text
-                  x={zone.type === 'ellipse' ? zone.cx : (zone.x! + zone.width! / 2)}
-                  y={zone.type === 'ellipse' ? (zone.cy! + 8) : (zone.y! + zone.height! / 2 + 8)}
-                  textAnchor="middle" fontSize="10" fontWeight={isSelected ? 700 : 400}
-                  fill={isSelected ? '#1d4ed8' : '#374151'} className="pointer-events-none select-none"
-                >{zone.label}</text>
-                {/* 零件数量 */}
-                <text
-                  x={zone.type === 'ellipse' ? zone.cx : (zone.x! + zone.width! / 2)}
-                  y={zone.type === 'ellipse' ? (zone.cy! + 22) : (zone.y! + zone.height! / 2 + 22)}
-                  textAnchor="middle" fontSize="9" fill="#6b7280" className="pointer-events-none select-none"
-                >{partCount}个零件</text>
-              </g>
-            );
-          })}
-        </svg>
+                return (
+                  <g key={zone.id} className="cursor-pointer" onClick={() => handleZoneClick(zone)}
+                    onMouseEnter={() => setHoveredZone(zone.id)} onMouseLeave={() => setHoveredZone(null)}>
+                    {zone.type === 'ellipse' ? (
+                      <ellipse cx={zone.cx} cy={zone.cy} rx={zone.rx} ry={zone.ry}
+                        fill={fill} stroke={strokeColor} strokeWidth={strokeWidth} />
+                    ) : (
+                      <rect x={zone.x} y={zone.y} width={zone.width} height={zone.height}
+                        rx="8" fill={fill} stroke={strokeColor} strokeWidth={strokeWidth} />
+                    )}
+                    <text
+                      x={zone.type === 'ellipse' ? zone.cx : (zone.x! + zone.width! / 2)}
+                      y={zone.type === 'ellipse' ? (zone.cy! - 10) : (zone.y! + zone.height! / 2 - 6)}
+                      textAnchor="middle" fontSize="16" className="pointer-events-none select-none"
+                    >{zone.icon}</text>
+                    <text
+                      x={zone.type === 'ellipse' ? zone.cx : (zone.x! + zone.width! / 2)}
+                      y={zone.type === 'ellipse' ? (zone.cy! + 8) : (zone.y! + zone.height! / 2 + 8)}
+                      textAnchor="middle" fontSize="10" fontWeight={isSelected ? 700 : 400}
+                      fill={isSelected ? '#1d4ed8' : '#374151'} className="pointer-events-none select-none"
+                    >{zone.label}</text>
+                    <text
+                      x={zone.type === 'ellipse' ? zone.cx : (zone.x! + zone.width! / 2)}
+                      y={zone.type === 'ellipse' ? (zone.cy! + 22) : (zone.y! + zone.height! / 2 + 22)}
+                      textAnchor="middle" fontSize="9" fill="#6b7280" className="pointer-events-none select-none"
+                    >{partCount}个零件</text>
+                  </g>
+                );
+              })}
+            </svg>
+          </div>
+        </div>
+
+        {/* 右侧信息面板 */}
+        <div className="lg:col-span-1">
+          {selectedAssembly ? (
+            <div className="bg-blue-50 rounded-lg p-3 border border-blue-200 h-full overflow-y-auto max-h-[380px]">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-lg">{selectedAssembly.icon}</span>
+                <h3 className="font-semibold text-gray-900 text-sm">{selectedAssembly.name}</h3>
+              </div>
+              <p className="text-xs text-gray-600 mb-2">
+                {selectedAssembly.subAssemblies.length} 个分总成 · {selectedAssembly.subAssemblies.reduce((s, sub) => s + sub.parts.length, 0)} 个零件
+              </p>
+              <div className="space-y-1">
+                {selectedAssembly.subAssemblies.map((sub) => (
+                  <div key={sub.id}>
+                    <button
+                      className={`w-full text-left px-2 py-1 rounded text-xs transition-colors ${
+                        selectedSubAssemblyId === sub.id
+                          ? 'bg-blue-200 text-blue-900 font-medium'
+                          : 'text-gray-700 hover:bg-blue-100'
+                      }`}
+                      onClick={() => onSubAssemblyClick(sub.id)}
+                    >
+                      {sub.name}
+                      <span className="ml-1 text-gray-400">({sub.parts.length}件)</span>
+                    </button>
+                    {selectedSubAssemblyId === sub.id && (
+                      <div className="ml-2 mt-0.5 space-y-0.5">
+                        {sub.parts.map((part) => (
+                          <button
+                            key={part.id}
+                            className={`w-full text-left px-2 py-0.5 rounded text-[11px] transition-colors flex items-center justify-between ${
+                              selectedPart?.id === part.id
+                                ? 'bg-blue-300 text-blue-900'
+                                : 'text-gray-500 hover:bg-blue-50'
+                            }`}
+                            onClick={() => onPartClick(part)}
+                          >
+                            <span className="truncate">• {part.name}</span>
+                            <span className="text-[10px] text-gray-400 ml-1 flex-shrink-0">{part.material}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 h-full flex items-center justify-center">
+              <div className="text-center">
+                <p className="text-2xl mb-2">⚡</p>
+                <p className="text-sm text-gray-500 mb-1">点击图上区域</p>
+                <p className="text-xs text-gray-400">查看智能电器总成零件清单</p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* 图例 */}
-      <div className="px-4 py-2 border-t border-gray-100 bg-gray-50 rounded-b-lg flex flex-wrap gap-x-4 gap-y-1">
+      <div className="mt-3 pt-2 border-t border-gray-100 flex flex-wrap gap-x-4 gap-y-1">
         {assemblies.map(a => (
           <button key={a.id}
             onClick={() => onAssemblyClick(a.id)}

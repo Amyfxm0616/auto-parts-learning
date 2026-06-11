@@ -56,7 +56,7 @@ export default function AdminLayout() {
       {/* Admin Footer */}
       <footer className="bg-gray-800 text-white py-4 mt-12">
         <div className="max-w-7xl mx-auto px-4 text-center text-sm">
-          管理端 - 汽车材料学习平台 © 2026
+          管理端 - 汽车及智能穿戴材料学习平台 © 2026
         </div>
       </footer>
     </div>
