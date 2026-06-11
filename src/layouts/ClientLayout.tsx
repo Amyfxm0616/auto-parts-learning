@@ -5,6 +5,7 @@ import ThemeToggle from '../components/ThemeToggle';
 const NAV_ITEMS = [
   { to: '/parts', label: '零部件' },
   { to: '/robot', label: '🤖 智能机器人' },
+  { to: '/erev', label: '🔋 增程系统' },
   { to: '/materials', label: '材料库' },
   { to: '/quiz', label: '练习测验' },
   { to: '/notes', label: '我的笔记' },

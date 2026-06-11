@@ -24,6 +24,7 @@ import SharedPartPage from './pages/SharedPartPage';
 import EditableDiagramDemo from './pages/EditableDiagramDemo';
 import AdvancedDiagramDemo from './pages/AdvancedDiagramDemo';
 import RobotPage from './pages/RobotPage';
+import ExtendedRangePage from './pages/ExtendedRangePage';
 import { isAdmin } from './utils/adminAuth';
 
 /** 管理页权限守卫：无权限则跳回练习测验页 */
@@ -57,6 +58,7 @@ function App() {
           <Route path="/editable-diagram" element={<EditableDiagramDemo />} />
           <Route path="/advanced-diagram" element={<AdvancedDiagramDemo />} />
           <Route path="/robot" element={<RobotPage />} />
+          <Route path="/erev" element={<ExtendedRangePage />} />
         </Route>
 
         {/* Catch all route - redirect to home */}
