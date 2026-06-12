@@ -266,13 +266,39 @@ export default function ExtendedRangeSystemView() {
                   </div>
                 </div>
               </div>
-              <div className="mb-5">
-                <ExtendedRangeEngineDiagram
-                  groups={extendedRangeData}
-                  selectedGroupId={selectedGroupId}
-                  onGroupSelect={selectGroup}
-                />
+
+              {/* 本系统专属流程示意图 */}
+              <div className={`rounded-xl border ${colors.border} mb-5 overflow-hidden`}>
+                <div className={`px-4 py-2 ${colors.light} border-b ${colors.border}`}>
+                  <p className={`text-xs font-semibold ${colors.text} uppercase tracking-wide`}>
+                    {selectedGroup?.icon} {selectedGroup?.name} · 总成结构示意图
+                  </p>
+                </div>
+                <div className="p-4 bg-white dark:bg-gray-800">
+                  <div className="flex flex-wrap gap-2 items-center justify-start">
+                    {selectedGroup?.assemblies.map((asm, idx) => {
+                      const partCount = asm.subAssemblies.reduce((s, sub) => s + sub.parts.length, 0);
+                      const isLast = idx === (selectedGroup.assemblies.length - 1);
+                      return (
+                        <div key={asm.id} className="flex items-center gap-2">
+                          <div
+                            className={`flex flex-col items-center justify-center rounded-lg border-2 cursor-pointer transition-all hover:shadow-md px-3 py-2 min-w-[90px] text-center ${colors.border} ${colors.hover} bg-white dark:bg-gray-700`}
+                            onClick={() => selectAssembly(selectedGroupId, asm.id)}
+                          >
+                            <span className={`text-[11px] font-semibold ${colors.text} leading-tight`}>{asm.name}</span>
+                            <span className="text-[10px] text-gray-400 mt-0.5">{partCount}件</span>
+                          </div>
+                          {!isLast && (
+                            <span className={`text-lg font-bold ${colors.text} opacity-50`}>→</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <p className="text-[10px] text-gray-400 mt-3">点击各总成节点查看零件清单</p>
+                </div>
               </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {selectedGroup?.assemblies.map(asm => (
                   <div
