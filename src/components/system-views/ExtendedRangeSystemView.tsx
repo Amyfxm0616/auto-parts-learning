@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { extendedRangeData, ER_COLOR_MAP } from '../../data/extendedRangeAssembly';
 import type { ERPart, ERSubAssembly } from '../../data/extendedRangeAssembly';
 import ExtendedRangeEngineDiagram from '../ExtendedRangeEngineDiagram';
@@ -19,6 +19,16 @@ export default function ExtendedRangeSystemView() {
   const [selectedSubId, setSelectedSubId]           = useState<string>('');
   const [expandedGroupIds, setExpandedGroupIds]     = useState<Set<string>>(new Set());
   const [selectedPart, setSelectedPart]             = useState<ERPart | null>(null);
+
+  const rightPanelRef = useRef<HTMLDivElement>(null);
+
+  // 切换分组或总成时，右侧内容区滚回顶部
+  useEffect(() => {
+    rightPanelRef.current?.scrollTo({ top: 0 });
+    // 同时把组件顶部滚入视口（页面级滚动）
+    rightPanelRef.current?.closest('[data-erev-root]')
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [selectedGroupId, selectedAssemblyId]);
 
   const selectedGroup    = extendedRangeData.find(g => g.id === selectedGroupId) ?? null;
   const selectedAssembly = selectedGroup?.assemblies.find(a => a.id === selectedAssemblyId) ?? null;
@@ -101,7 +111,7 @@ export default function ExtendedRangeSystemView() {
   );
 
   return (
-    <div>
+    <div data-erev-root>
       {/* 统计 + 材料横幅 */}
       <div className="p-6 border-b border-gray-200 dark:border-gray-700">
         <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
@@ -152,9 +162,12 @@ export default function ExtendedRangeSystemView() {
                         ? `${c.light} ${c.text} font-semibold`
                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                     }`}
-                    onClick={() => { selectGroup(group.id); toggleGroup(group.id); }}
+                    onClick={() => selectGroup(group.id)}
                   >
-                    <span className="text-xs text-gray-400 w-3 flex-shrink-0">
+                    <span
+                      className="text-xs text-gray-400 w-3 flex-shrink-0 hover:text-gray-600"
+                      onClick={(e) => { e.stopPropagation(); toggleGroup(group.id); }}
+                    >
                       {isExpanded ? '▼' : '▶'}
                     </span>
                     <span>{group.icon}</span>
@@ -188,7 +201,7 @@ export default function ExtendedRangeSystemView() {
         </div>
 
         {/* 右侧内容区 */}
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 overflow-auto" ref={rightPanelRef}>
           {!selectedGroupId ? (
             <div className="p-6">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">增程系统全局示意图</h2>
