@@ -14,6 +14,7 @@ import SealingSystemView from '../components/system-views/SealingSystemView';
 import GlassSystemView from '../components/system-views/GlassSystemView';
 import SideDoorSystemView from '../components/system-views/SideDoorSystemView';
 import ThermalManagementSystemView from '../components/system-views/ThermalManagementSystemView';
+import ExtendedRangeSystemView from '../components/system-views/ExtendedRangeSystemView';
 
 type Part = typeof initialParts[number];
 type PartSystem = typeof initialSystems[number];
@@ -844,8 +845,8 @@ export default function PartsPage() {
             </div>
           )}
 
-          {/* Subspecialty Tabs with Management (内饰、座椅、灯具、智能电器、副仪表板总成子系统不显示) */}
-          {!(selectedSystem === 'sys-001' && ['内饰', '座椅', '灯具', '智能电器'].includes(selectedSubsystem)) && (
+          {/* Subspecialty Tabs with Management (内饰、座椅、灯具、智能电器、增程系统不显示) */}
+          {!(selectedSystem === 'sys-001' && ['内饰', '座椅', '灯具', '智能电器'].includes(selectedSubsystem)) && selectedSystem !== 'sys-003' && (
             <div className="border-b border-gray-200 overflow-x-auto">
               <div className="flex px-6 items-center">
                 {subspecialties.map((subspecialty) => (
@@ -944,7 +945,7 @@ export default function PartsPage() {
           )}
 
           {/* Subspecialty Content */}
-          {(selectedSubspecialty || (selectedSystem === 'sys-001' && selectedSubsystem) || selectedSystem === 'sys-004') && (
+          {(selectedSubspecialty || (selectedSystem === 'sys-001' && selectedSubsystem) || selectedSystem === 'sys-004' || selectedSystem === 'sys-003') && (
             <div>
               {/* 各系统视图组件 */}
               {selectedSystem === 'sys-001' && selectedSubsystem === '内饰' ? (
@@ -965,6 +966,8 @@ export default function PartsPage() {
                 <SideDoorSystemView />
               ) : selectedSystem === 'sys-004' ? (
                 <ThermalManagementSystemView />
+              ) : selectedSystem === 'sys-003' ? (
+                <ExtendedRangeSystemView />
               ) : (
                 <>
                   <div className="p-6 border-b border-gray-200 flex justify-between items-center bg-gray-50">
