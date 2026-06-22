@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { robotAssemblyData, type RobotAssembly, type RobotPart } from '../data/robotAssembly';
+import RobotBodyDiagram from '../components/RobotBodyDiagram';
 
 const COLOR_MAP: Record<string, { bg: string; light: string; border: string; text: string; badge: string; hover: string }> = {
   blue:   { bg: 'bg-blue-600',   light: 'bg-blue-50',   border: 'border-blue-200', text: 'text-blue-700',   badge: 'bg-blue-100 text-blue-700',   hover: 'hover:bg-blue-50' },
@@ -13,9 +14,9 @@ const COLOR_MAP: Record<string, { bg: string; light: string; border: string; tex
 };
 
 export default function RobotPage() {
-  const [selectedAssemblyId, setSelectedAssemblyId] = useState<string>('rb-01');
+  const [selectedAssemblyId, setSelectedAssemblyId] = useState<string>('');
   const [selectedSubId, setSelectedSubId] = useState<string>('');
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set(['rb-01']));
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [selectedPart, setSelectedPart] = useState<RobotPart | null>(null);
 
   const selectedAssembly = robotAssemblyData.find(a => a.id === selectedAssemblyId) ?? null;
@@ -88,6 +89,19 @@ export default function RobotPage() {
         <div className="w-56 flex-shrink-0 border-r border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 overflow-y-auto">
           <div className="p-3">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-2 mb-2">系统分类</p>
+            {/* Overview item */}
+            <div
+              className={`flex items-center gap-1.5 px-2 py-2 rounded-md cursor-pointer text-sm select-none transition-colors mb-1 ${
+                selectedAssemblyId === ''
+                  ? 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold'
+                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+              }`}
+              onClick={() => { setSelectedAssemblyId(''); setSelectedSubId(''); setSelectedPart(null); }}
+            >
+              <span className="text-xs text-gray-400 w-3 flex-shrink-0" />
+              <span>🤖</span>
+              <span className="flex-1 truncate font-medium text-xs">总览</span>
+            </div>
             {robotAssemblyData.map(assembly => {
               const c = COLOR_MAP[assembly.color] ?? COLOR_MAP.blue;
               const isAsmSelected = selectedAssemblyId === assembly.id;
@@ -146,14 +160,26 @@ export default function RobotPage() {
         {/* ── 右侧：内容区 ── */}
         <div className="flex-1 overflow-auto">
           {!selectedAssembly ? (
-            <div className="flex items-center justify-center h-full text-gray-400">
-              <p>请选择左侧系统</p>
+            <div className="p-4">
+              <RobotBodyDiagram
+                selectedId={selectedAssemblyId}
+                onSelect={(id) => {
+                  setSelectedAssemblyId(id);
+                  setSelectedSubId('');
+                  setSelectedPart(null);
+                  setExpandedIds(prev => { const n = new Set(prev); n.add(id); return n; });
+                }}
+              />
             </div>
           ) : selectedSub ? (
             /* ── 分总成：零件清单表 ── */
             <div className="p-6">
               {/* 面包屑 */}
               <div className="flex items-center gap-1.5 text-sm text-gray-500 mb-4">
+                <button className="hover:text-blue-600" onClick={() => { setSelectedAssemblyId(''); setSelectedSubId(''); setSelectedPart(null); }}>
+                  🤖 总览
+                </button>
+                <span>/</span>
                 <button className="hover:text-blue-600" onClick={() => setSelectedSubId('')}>
                   {selectedAssembly.icon} {selectedAssembly.name}
                 </button>
@@ -204,6 +230,14 @@ export default function RobotPage() {
           ) : (
             /* ── 系统总览 ── */
             <div className="p-6">
+              {/* 面包屑 */}
+              <div className="flex items-center gap-1.5 text-sm text-gray-500 mb-4">
+                <button className="hover:text-blue-600" onClick={() => { setSelectedAssemblyId(''); setSelectedSubId(''); setSelectedPart(null); }}>
+                  🤖 总览
+                </button>
+                <span>/</span>
+                <span className={`font-medium ${colors.text}`}>{selectedAssembly.icon} {selectedAssembly.name}</span>
+              </div>
               {/* 系统标题 */}
               <div className={`rounded-xl p-5 mb-6 ${colors.light} ${colors.border} border`}>
                 <div className="flex items-start gap-4">
