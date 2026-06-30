@@ -160,15 +160,15 @@ export const quizQuestions: Question[] = [
     "type": "fill",
     "question": "汽车内饰 PP 改性塑料添加滑石粉，主要作用是提升（）、降低（）。",
     "correctAnswer": [
-      "刚性",
-      "收缩率"
+      "刚性（或强度、刚度）",
+      "收缩率（或尺寸变形）"
     ],
     "difficulty": "easy",
     "category": "",
     "tags": [],
     "id": "q-1777611603832-c2ar06",
     "createdAt": 1777611603832,
-    "updatedAt": 1778056408917,
+    "updatedAt": 1782807066133,
     "explanation": "",
     "fillBlanks": 2
   },
@@ -269,13 +269,13 @@ export const quizQuestions: Question[] = [
       "FKM、VMQ 、ACM、HNBR、EPDM、 NBR 、NR"
     ],
     "explanation": "",
-    "difficulty": "hard",
+    "difficulty": "medium",
     "category": "",
     "tags": [],
     "fillBlanks": 1,
     "id": "q-1777612835700-fuw1d2",
     "createdAt": 1777612835700,
-    "updatedAt": 1782807027762
+    "updatedAt": 1782807034152
   },
   {
     "type": "single",
