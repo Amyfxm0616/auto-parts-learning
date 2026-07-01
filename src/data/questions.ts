@@ -713,8 +713,7 @@ export const quizQuestions: Question[] = [
       "需要耐热达到100℃以上",
       "高抗冲、无卤环保阻燃、耐菌要求",
       "良好外观及加工性要求",
-      "优秀的气味/VOC性能",
-      "以上均需满足。"
+      "优秀的气味/VOC性能"
     ],
     "correctAnswer": [
       0,
@@ -729,7 +728,7 @@ export const quizQuestions: Question[] = [
     "tags": [],
     "id": "q-1782724344237-hd20cb",
     "createdAt": 1782724344237,
-    "updatedAt": 1782724344237
+    "updatedAt": 1782873100797
   }
 ];
 
