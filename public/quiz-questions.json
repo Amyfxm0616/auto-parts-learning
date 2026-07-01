@@ -268,17 +268,22 @@
     "updatedAt": 1777612882659
   },
   {
-    "type": "essay",
-    "question": "PA66与PA6相比，以下描述错误的是？\nA. PA66熔点更高\nB. PA66吸水率低于PA6\nC. PA66加工流动性优于PA6\nD. PA66力学性能整体略优于PA6",
-    "correctAnswer": "C",
-    "maxLength": 200,
-    "keywords": [],
-    "difficulty": "medium",
+    "type": "single",
+    "question": "PA66与PA6相比，以下描述错误的是？",
+    "correctAnswer": 2,
+    "difficulty": "easy",
     "category": "",
     "tags": [],
     "id": "q-1777612882659-pwx8c8",
     "createdAt": 1777612882659,
-    "updatedAt": 1777612882659
+    "updatedAt": 1782870703703,
+    "options": [
+      "PA66熔点更高",
+      "PA66吸水率低于PA6",
+      "PA66加工流动性优于PA6",
+      "PA66力学性能整体略优于PA6"
+    ],
+    "explanation": ""
   },
   {
     "type": "single",
