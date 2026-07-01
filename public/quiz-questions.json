@@ -747,5 +747,26 @@
     "id": "q-1782882645807-zhx2a0",
     "createdAt": 1782882645807,
     "updatedAt": 1782882645807
+  },
+  {
+    "type": "multiple",
+    "question": "目标/潜在应用零件降本额度由谁核算？",
+    "options": [
+      "RD科技树项目经理",
+      "财经BP",
+      "采购同事",
+      "成本核算"
+    ],
+    "correctAnswer": [
+      2,
+      3
+    ],
+    "explanation": "",
+    "difficulty": "easy",
+    "category": "",
+    "tags": [],
+    "id": "q-1782882692629-nfan3o",
+    "createdAt": 1782882692629,
+    "updatedAt": 1782882692629
   }
 ]
