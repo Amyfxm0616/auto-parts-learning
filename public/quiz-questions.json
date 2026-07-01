@@ -451,8 +451,8 @@
     "type": "fill",
     "question": "按受热时的行为和具备反复成型加工性，可以将塑料分为（）和（）两大类。",
     "correctAnswer": [
-      "热塑性塑料或热固性塑料",
-      "热固性塑料或热塑性塑料"
+      "热塑性塑料、热固性塑料",
+      "热固性塑料、热塑性塑料"
     ],
     "explanation": "",
     "difficulty": "easy",
@@ -461,7 +461,7 @@
     "fillBlanks": 2,
     "id": "q-1777624105853-dl5olr",
     "createdAt": 1777624105853,
-    "updatedAt": 1778057390849
+    "updatedAt": 1782870746206
   },
   {
     "type": "fill",
