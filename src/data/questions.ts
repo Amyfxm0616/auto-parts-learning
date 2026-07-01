@@ -264,9 +264,9 @@ export const quizQuestions: Question[] = [
   },
   {
     "type": "fill",
-    "question": "把以下橡胶材料，按耐热性能高低排序： \nSBR、HNBR、NBR、EPDM 、VMQ、ACM 、ECO、CSM、NR、FKM、CR\n",
+    "question": "把以下橡胶材料，按耐热性能高低排序： \nHNBR、NBR、EPDM 、VMQ、ACM 、NR、FKM\n",
     "correctAnswer": [
-      "FKM≥VMQ ≥ACM ≥HNBR、ECO ≥EPDM ≥CSM ≥CR、NBR ≥NR，SBR"
+      "FKM≥VMQ ≥ACM ≥HNBR≥EPDM≥NBR ≥NR"
     ],
     "explanation": "",
     "difficulty": "hard",
@@ -275,7 +275,7 @@ export const quizQuestions: Question[] = [
     "fillBlanks": 1,
     "id": "q-1777612835700-fuw1d2",
     "createdAt": 1777612835700,
-    "updatedAt": 1777612835700
+    "updatedAt": 1782870658006
   },
   {
     "type": "single",
