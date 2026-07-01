@@ -703,5 +703,28 @@
     "id": "q-1782882551875-rmg7er",
     "createdAt": 1782882551875,
     "updatedAt": 1782882551875
+  },
+  {
+    "type": "multiple",
+    "question": "科技树RD项目哪几个关键节点需要在研发运营科技树双周会进行汇报？",
+    "options": [
+      "科技树RD项目立项",
+      "科技树RD项目TR3评审",
+      "科技树RD项目TR5评审",
+      "科技树RD项目结项"
+    ],
+    "correctAnswer": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "explanation": "",
+    "difficulty": "easy",
+    "category": "",
+    "tags": [],
+    "id": "q-1782882598428-9ixif8",
+    "createdAt": 1782882598428,
+    "updatedAt": 1782882598428
   }
 ]
