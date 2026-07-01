@@ -753,6 +753,27 @@ export const quizQuestions: Question[] = [
     "id": "q-1782882598428-9ixif8",
     "createdAt": 1782882598428,
     "updatedAt": 1782882598428
+  },
+  {
+    "type": "multiple",
+    "question": "以下哪些项目属于一级项目？",
+    "options": [
+      "项目总预算（研发投入+人力成本）＜300万的项目",
+      "项目总预算（研发投入+人力成本）≥5000万的项目",
+      "公司级战略技术项目",
+      "车型平台类开发项目"
+    ],
+    "correctAnswer": [
+      1,
+      2
+    ],
+    "explanation": "",
+    "difficulty": "easy",
+    "category": "",
+    "tags": [],
+    "id": "q-1782882645807-zhx2a0",
+    "createdAt": 1782882645807,
+    "updatedAt": 1782882645807
   }
 ];
 
