@@ -4,17 +4,13 @@ import type { GlassCategory, GlassPart } from '../data/glassAssembly';
 interface GlassDiagramProps {
   categories: GlassCategory[];
   selectedCategoryId: string;
-  selectedPartId: string;
   onCategoryClick: (catId: string) => void;
-  onPartClick: (catId: string, partId: string) => void;
 }
 
 export default function GlassDiagram({
   categories,
   selectedCategoryId,
-  selectedPartId,
   onCategoryClick,
-  onPartClick,
 }: GlassDiagramProps) {
   const [hovered, setHovered] = useState<string>('');
 

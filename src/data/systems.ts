@@ -130,8 +130,8 @@ export const partSystems: PartSystem[] = [
     name: '动力驱动系统',
     icon: '⚙️',
     parts: [],
-    description: '电机及动力传递系统',
-    subspecialties: ['驱动电机', '减速器', '电控系统', '传动轴', '差速器']
+    description: '电驱总成、润滑油路、高压连接与传动支撑等动力驱动非金属件体系',
+    subspecialties: ['控制与信号系统', '润滑与油路系统', '冷却与介质管路', '连接与绝缘系统', '传动支撑系统']
   },
   {
     id: 'sys-006',
@@ -146,8 +146,8 @@ export const partSystems: PartSystem[] = [
     name: '底盘系统',
     icon: '🛞',
     parts: [],
-    description: '包括悬挂、转向、制动等系统',
-    subspecialties: ['悬挂系统', '转向系统', '制动系统', '车轮系统', '底盘结构']
+    description: '底盘结构、悬架系统与转向系统的专用底盘视图，聚焦非金属材料、工艺与层级总成关系',
+    subspecialties: ['底盘结构', '悬架系统', '转向系统']
   },
   {
     id: 'sys-008',

@@ -15,6 +15,12 @@ import GlassSystemView from '../components/system-views/GlassSystemView';
 import SideDoorSystemView from '../components/system-views/SideDoorSystemView';
 import ThermalManagementSystemView from '../components/system-views/ThermalManagementSystemView';
 import ExtendedRangeSystemView from '../components/system-views/ExtendedRangeSystemView';
+import PowerDriveSystemView from '../components/system-views/PowerDriveSystemView';
+import ChassisSystemView from '../components/system-views/ChassisSystemView';
+
+const DEDICATED_SYSTEM_IDS = new Set(['sys-003', 'sys-005', 'sys-007']);
+
+const CURRENT_VERSION = '4.3';
 
 type Part = typeof initialParts[number];
 type PartSystem = typeof initialSystems[number];
@@ -56,8 +62,6 @@ export default function PartsPage() {
     const dataVersion = localStorage.getItem('partsDataVersion');
 
     // 数据版本控制 - 如果版本不匹配，使用初始数据
-    const CURRENT_VERSION = '4.2';
-
     if (dataVersion !== CURRENT_VERSION) {
       // 版本不匹配，重置为初始数据
       setParts(initialParts);
@@ -88,6 +92,9 @@ export default function PartsPage() {
     // 如果是座舱系统，设置默认子系统为"内饰"
     if (selectedSystem === 'sys-001') {
       setSelectedSubsystem('内饰');
+    } else if (DEDICATED_SYSTEM_IDS.has(selectedSystem)) {
+      setSelectedSubsystem('');
+      setSelectedSubspecialty('');
     } else {
       setSelectedSubsystem('');
       // 非座舱系统，使用原有逻辑
@@ -845,8 +852,8 @@ export default function PartsPage() {
             </div>
           )}
 
-          {/* Subspecialty Tabs with Management (内饰、座椅、灯具、智能电器、增程系统不显示) */}
-          {!(selectedSystem === 'sys-001' && ['内饰', '座椅', '灯具', '智能电器'].includes(selectedSubsystem)) && selectedSystem !== 'sys-003' && (
+          {/* Subspecialty Tabs with Management (内饰、座椅、灯具、智能电器及专用系统不显示) */}
+          {!(selectedSystem === 'sys-001' && ['内饰', '座椅', '灯具', '智能电器'].includes(selectedSubsystem)) && !DEDICATED_SYSTEM_IDS.has(selectedSystem) && (
             <div className="border-b border-gray-200 overflow-x-auto">
               <div className="flex px-6 items-center">
                 {subspecialties.map((subspecialty) => (
@@ -945,7 +952,7 @@ export default function PartsPage() {
           )}
 
           {/* Subspecialty Content */}
-          {(selectedSubspecialty || (selectedSystem === 'sys-001' && selectedSubsystem) || selectedSystem === 'sys-004' || selectedSystem === 'sys-003') && (
+          {(selectedSubspecialty || (selectedSystem === 'sys-001' && selectedSubsystem) || selectedSystem === 'sys-004' || DEDICATED_SYSTEM_IDS.has(selectedSystem)) && (
             <div>
               {/* 各系统视图组件 */}
               {selectedSystem === 'sys-001' && selectedSubsystem === '内饰' ? (
@@ -968,6 +975,10 @@ export default function PartsPage() {
                 <ThermalManagementSystemView />
               ) : selectedSystem === 'sys-003' ? (
                 <ExtendedRangeSystemView />
+              ) : selectedSystem === 'sys-005' ? (
+                <PowerDriveSystemView />
+              ) : selectedSystem === 'sys-007' ? (
+                <ChassisSystemView />
               ) : (
                 <>
                   <div className="p-6 border-b border-gray-200 flex justify-between items-center bg-gray-50">

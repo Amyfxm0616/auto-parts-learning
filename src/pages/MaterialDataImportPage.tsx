@@ -1,7 +1,5 @@
 import { useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { read as xlsxRead, utils as xlsxUtils } from 'xlsx';
-import mammoth from 'mammoth';
 import type { MaterialPerformanceData, MaterialProperty } from '../types/materialPerformance';
 import { PROPERTY_CATEGORIES } from '../types/materialPerformance';
 import { upsertCustomPerformance } from '../data/materialPerformance';
@@ -56,7 +54,7 @@ export default function MaterialDataImportPage() {
   });
   const [materialCategory, setMaterialCategory] = useState(editMaterial?.category ?? 'plastic');
   const [properties, setProperties] = useState<MaterialProperty[]>(editMaterial?.properties ?? []);
-  const [newProp, setNewProp] = useState({ ...EMPTY_PROP });
+  const [newProp, setNewProp] = useState<MaterialProperty>({ ...EMPTY_PROP });
   const [pasteInput, setPasteInput] = useState('');
   const [fileStatus, setFileStatus] = useState('');
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
@@ -111,6 +109,9 @@ export default function MaterialDataImportPage() {
 
       if (ext === 'xlsx' || ext === 'xls' || ext === 'csv') {
         // Excel / CSV
+        const [{ read: xlsxRead, utils: xlsxUtils }] = await Promise.all([
+          import('xlsx')
+        ]);
         const buf = await file.arrayBuffer();
         const wb = xlsxRead(buf, { type: 'array' });
         const ws = wb.Sheets[wb.SheetNames[0]];
@@ -123,6 +124,7 @@ export default function MaterialDataImportPage() {
         setFileStatus(`Excel 解析成功：${parsed.length} 条性能数据`);
       } else if (ext === 'docx') {
         // Word
+        const mammoth = await import('mammoth');
         const buf = await file.arrayBuffer();
         const result = await mammoth.extractRawText({ arrayBuffer: buf });
         const lines = result.value.split('\n').filter(l => l.trim());

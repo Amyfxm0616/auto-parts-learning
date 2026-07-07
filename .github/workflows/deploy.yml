@@ -26,6 +26,9 @@ jobs:
       - name: 构建项目
         run: npm run build:no-check
 
+      - name: 检查发布题库文件
+        run: test -f public/quiz-questions.json
+
       - name: 部署到 gh-pages 分支
         uses: peaceiris/actions-gh-pages@v4
         with:

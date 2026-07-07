@@ -14,6 +14,8 @@ export interface QuizSessionRecord {
   correctAnswer: number | number[] | string | string[] | boolean;
   explanation?: string;
   isCorrect: boolean;
+  relatedMaterialId?: string;
+  relatedPartId?: string;
 }
 
 export interface WeakArea {
@@ -122,6 +124,8 @@ export function buildSession(params: {
       correctAnswer: q?.correctAnswer ?? '',
       explanation: q?.explanation,
       isCorrect: r.isCorrect,
+      relatedMaterialId: q?.relatedMaterialId,
+      relatedPartId: q?.relatedPartId,
     };
   });
 

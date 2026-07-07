@@ -164,7 +164,7 @@ const EnhancedRubberMaterialView: React.FC<EnhancedRubberMaterialViewProps> = ({
         case 'temp':
         default:
           primaryKey = material.material;
-          secondaryKey = material.temperatureRangeKey || material.system;
+          secondaryKey = material.system;
           break;
       }
 
@@ -251,18 +251,6 @@ const EnhancedRubberMaterialView: React.FC<EnhancedRubberMaterialViewProps> = ({
   const getTreeColor = (key: string, type: 'primary' | 'secondary'): string => {
     if (type === 'primary') {
       switch (viewMode) {
-        case 'system':
-          const systemColors: Record<string, string> = {
-            engine: 'bg-red-100 text-red-800 border-red-300',
-            transmission: 'bg-orange-100 text-orange-800 border-orange-300',
-            suspension: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-            braking: 'bg-green-100 text-green-800 border-green-300',
-            cooling: 'bg-cyan-100 text-cyan-800 border-cyan-300',
-            fuel: 'bg-blue-100 text-blue-800 border-blue-300',
-            electrical: 'bg-purple-100 text-purple-800 border-purple-300',
-            body: 'bg-pink-100 text-pink-800 border-pink-300'
-          };
-          return systemColors[key] || 'bg-gray-100 text-gray-800';
         case 'temp':
           return getTempColor(key);
         case 'type':

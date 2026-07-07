@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import type { MaterialPerformanceData } from '../types/materialPerformance';
 import { PROPERTY_CATEGORIES } from '../types/materialPerformance';
-import { getAllMaterialsPerformance, isCustomPerformance, deleteCustomPerformance, upsertCustomPerformance } from '../data/materialPerformance';
+import { getAllMaterialsPerformance, isCustomPerformance, deleteCustomPerformance } from '../data/materialPerformance';
 import MaterialPerformanceCard from '../components/MaterialPerformanceCard';
 
 export default function MaterialPerformancePage() {

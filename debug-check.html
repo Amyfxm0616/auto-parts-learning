@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>诊断检查</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-item {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #3b82f6;
+        }
+        .success { border-left-color: #10b981; }
+        .error { border-left-color: #ef4444; }
+        .warning { border-left-color: #f59e0b; }
+        pre {
+            background: #f9fafb;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 应用诊断检查</h1>
+    <div id="results"></div>
+
+    <script type="module">
+        const results = document.getElementById('results');
+
+        function addResult(title, status, message) {
+            const div = document.createElement('div');
+            div.className = `test-item ${status}`;
+            div.innerHTML = `
+                <h3>${status === 'success' ? '✅' : status === 'error' ? '❌' : '⚠️'} ${title}</h3>
+                <pre>${message}</pre>
+            `;
+            results.appendChild(div);
+        }
+
+        // 测试1: 检查主要依赖
+        try {
+            const react = await import('http://localhost:5000/node_modules/.vite/deps/react.js?v=6fc6cb03');
+            addResult('React 加载', 'success', `React 版本: ${react.version || '已加载'}`);
+        } catch (e) {
+            addResult('React 加载', 'error', `错误: ${e.message}`);
+        }
+
+        // 测试2: 检查App组件
+        try {
+            const app = await import('http://localhost:5000/src/App.tsx');
+            addResult('App 组件', 'success', 'App.tsx 成功加载');
+        } catch (e) {
+            addResult('App 组件', 'error', `错误: ${e.message}\n堆栈: ${e.stack}`);
+        }
+
+        // 测试3: 检查MaterialsPage
+        try {
+            const materialsPage = await import('http://localhost:5000/src/pages/MaterialsPage.tsx');
+            addResult('MaterialsPage', 'success', 'MaterialsPage.tsx 成功加载');
+        } catch (e) {
+            addResult('MaterialsPage', 'error', `错误: ${e.message}\n堆栈: ${e.stack}`);
+        }
+
+        // 测试4: 检查橡胶组件
+        try {
+            const rubberView = await import('http://localhost:5000/src/components/rubber/EnhancedRubberMaterialView.tsx');
+            addResult('橡胶材料组件', 'success', 'EnhancedRubberMaterialView.tsx 成功加载');
+        } catch (e) {
+            addResult('橡胶材料组件', 'error', `错误: ${e.message}\n堆栈: ${e.stack}`);
+        }
+
+        // 测试5: 检查橡胶数据
+        try {
+            const rubberData = await import('http://localhost:5000/src/data/rubberMaterials.ts');
+            addResult('橡胶数据', 'success', `加载了 ${rubberData.rubberMaterialsData?.length || 0} 条橡胶材料数据`);
+        } catch (e) {
+            addResult('橡胶数据', 'error', `错误: ${e.message}\n堆栈: ${e.stack}`);
+        }
+
+        // 测试6: 检查CSS
+        try {
+            await fetch('http://localhost:5000/src/index.css');
+            addResult('CSS 样式', 'success', 'index.css 可访问');
+        } catch (e) {
+            addResult('CSS 样式', 'error', `错误: ${e.message}`);
+        }
+
+        addResult('诊断完成', 'success', '请查看上面的测试结果。如果有红色错误项，请将错误信息提供给我。');
+    </script>
+</body>
+</html>

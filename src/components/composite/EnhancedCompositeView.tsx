@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
 import { materials as allMaterials } from '../../data/materials';
-import { useNavigate } from 'react-router-dom';
 import CompositeTreeView from './CompositeTreeView';
 
 type Material = typeof allMaterials[number];
@@ -276,7 +275,6 @@ export default function EnhancedCompositeView() {
   const [filterFiber, setFilterFiber] = useState<'全部' | '碳纤维' | '玻璃纤维'>('全部');
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
   const [showProcessGuide, setShowProcessGuide] = useState(false);
-  const navigate = useNavigate();
 
   const filtered = useMemo(() => {
     return compositeMaterials.filter(m => {
@@ -315,11 +313,6 @@ export default function EnhancedCompositeView() {
     `px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
       active ? 'bg-blue-600 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
     }`;
-
-  // 处理材料选择
-  const handleMaterialSelect = (material: Material) => {
-    navigate(`/materials/${material.id}`);
-  };
 
   // 视图切换按钮样式
   const viewBtnCls = (active: boolean) =>

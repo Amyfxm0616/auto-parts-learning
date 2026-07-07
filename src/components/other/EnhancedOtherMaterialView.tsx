@@ -149,7 +149,7 @@ const ExpandedOtherMaterialView: React.FC<EnhancedOtherMaterialViewProps> = ({
   };
 
   // 渲染树节点
-  const renderTreeNode = (node: TreeNode, index: number) => {
+  const renderTreeNode = (node: TreeNode): React.ReactNode => {
     const isExpanded = expandedNodes.has(node.id);
     const hasChildren = node.children && node.children.length > 0;
     const isSelected = selectedMaterial?.id === node.id;
@@ -205,7 +205,7 @@ const ExpandedOtherMaterialView: React.FC<EnhancedOtherMaterialViewProps> = ({
 
         {isExpanded && hasChildren && (
           <div>
-            {node.children?.map((child, childIndex) => renderTreeNode(child, childIndex))}
+            {node.children?.map(child => renderTreeNode(child))}
           </div>
         )}
       </div>
@@ -354,7 +354,7 @@ const ExpandedOtherMaterialView: React.FC<EnhancedOtherMaterialViewProps> = ({
                 return (
                   <div key={key} className="bg-blue-50 rounded-lg p-4">
                     <div className="text-xs text-gray-500 mb-1">{labelMap[key] || key}</div>
-                    <div className="font-semibold text-gray-900 text-sm">{value}</div>
+                    <div className="font-semibold text-gray-900 text-sm">{String(value)}</div>
                   </div>
                 );
               }
@@ -519,7 +519,7 @@ const ExpandedOtherMaterialView: React.FC<EnhancedOtherMaterialViewProps> = ({
               <h3 className="text-lg font-semibold text-gray-900 mb-4">材料列表</h3>
               {(materialTree.length > 0) ? (
                 <div className={viewMode === 'tree' ? 'max-h-[700px] overflow-y-auto' : ''}>
-                  {materialTree.map((node, index) => renderTreeNode(node, index))}
+                  {materialTree.map(node => renderTreeNode(node))}
                 </div>
               ) : (
                 <div className="text-center py-12 text-gray-500">

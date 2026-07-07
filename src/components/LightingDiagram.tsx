@@ -42,7 +42,6 @@ export default function LightingDiagram({
   selectedLightingPart,
 }: LightingDiagramProps) {
   const [hoveredZone, setHoveredZone] = useState<string | null>(null);
-  const [selectedZoneAssembly, setSelectedZoneAssembly] = useState<string | null>(null);
   const [scale, setScale] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
@@ -166,7 +165,6 @@ export default function LightingDiagram({
   };
 
   const handleZoneClick = (zone: DiagramZone) => {
-    setSelectedZoneAssembly(zone.assemblyId);
     onAssemblyClick(zone.assemblyId);
   };
 
@@ -209,7 +207,6 @@ export default function LightingDiagram({
     const fill = getFillColor(zone);
     const stroke = getStrokeColor(zone);
     const strokeW = isPartOfSelected(zone) ? '3' : '1.5';
-    const assembly = getAssembly(zone.assemblyId);
     const partsCount = getTotalParts(zone.assemblyId);
 
     const commonProps = {
@@ -296,9 +293,6 @@ export default function LightingDiagram({
 
   // Get parts for selected zone's info panel
   const selectedAssembly = selectedAssemblyId ? getAssembly(selectedAssemblyId) : null;
-  const allSubParts = selectedAssembly
-    ? selectedAssembly.subAssemblies.flatMap(s => s.parts)
-    : [];
 
   return (
     <div className="bg-white rounded-lg shadow p-4">

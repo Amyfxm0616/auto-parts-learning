@@ -7,9 +7,9 @@ export default function PartDetailPage() {
 
   // Read from localStorage (saved by PartsPage), fallback to static data
   const savedPartsRaw = typeof window !== 'undefined' ? localStorage.getItem('customParts') : null;
-  const parts = savedPartsRaw ? JSON.parse(savedPartsRaw) : initialParts;
+  const parts: typeof initialParts = savedPartsRaw ? JSON.parse(savedPartsRaw) as typeof initialParts : initialParts;
 
-  const part = parts.find((p: typeof initialParts[number]) => p.id === id);
+  const part = parts.find(p => p.id === id);
 
   if (!part) {
     return (

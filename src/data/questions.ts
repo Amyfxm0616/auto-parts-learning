@@ -965,7 +965,7 @@ export function deleteQuestion(id: string): boolean {
   return true;
 }
 
-// 初始化题目：优先保留本地未同步编辑，再读取已发布题库，最后回退到 bundled 数据
+// 初始化题目：桌面端保留未同步编辑，网页端优先跟随已发布题库，最后回退到本地缓存或 bundled 数据
 export async function initializeQuestions(): Promise<void> {
   if (!isBrowserEnv()) {
     currentQuestions = quizQuestions;
@@ -982,21 +982,15 @@ export async function initializeQuestions(): Promise<void> {
       currentQuestions = storedQuestions;
     }
 
-    if (hasDirtyQuestions() && storedQuestions) {
+    const preserveLocalDirtyQuestions = isElectronEnv() && hasDirtyQuestions() && !!storedQuestions;
+    if (preserveLocalDirtyQuestions) {
       return;
     }
 
     const publishedQuestions = await loadPublishedQuestions();
     if (publishedQuestions) {
       const publishedBuildId = computeBuildId(publishedQuestions);
-      const storedBuildId = localStorage.getItem(BUILD_ID_KEY);
-
-      if (!storedQuestions || storedBuildId !== publishedBuildId) {
-        persistQuestions(publishedQuestions, { markDirty: false, buildId: publishedBuildId });
-      } else {
-        currentQuestions = storedQuestions;
-        localStorage.removeItem(DIRTY_KEY);
-      }
+      persistQuestions(publishedQuestions, { markDirty: false, buildId: publishedBuildId });
       return;
     }
 

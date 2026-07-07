@@ -98,6 +98,7 @@ const RubberMaterialEditModal: React.FC<Props> = ({ material, isOpen, onClose, o
 
     const updatedMaterial: RubberMaterialExtended = {
       id: material!.id,
+      name: formData.name || material!.name,
       category: 'rubber',
       rubberType: formData.rubberType || material!.rubberType,
       tempLevel: formData.tempLevel || material!.tempLevel,

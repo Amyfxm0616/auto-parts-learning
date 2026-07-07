@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>测试页面加载</title>
+</head>
+<body>
+    <h1>测试中...</h1>
+    <script>
+        console.log('开始测试页面加载');
+
+        // 测试访问主页
+        fetch('http://localhost:5000/')
+            .then(r => r.text())
+            .then(html => {
+                console.log('主页加载成功，HTML长度:', html.length);
+                document.getElementById('result').innerHTML = '<p style="color: green;">✓ 主页加载成功</p>';
+            })
+            .catch(e => {
+                console.error('主页加载失败:', e);
+                document.getElementById('result').innerHTML = '<p style="color: red;">✗ 主页加载失败: ' + e.message + '</p>';
+            });
+    </script>
+    <div id="result"></div>
+</body>
+</html>

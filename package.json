@@ -5,7 +5,10 @@
   "description": "汽车及智能穿戴材料学习平台",
   "author": "Auto Parts Team",
   "type": "module",
-  "main": "dist-electron/main.js",
+  "engines": {
+    "node": ">=22.12.0 <23"
+  },
+  "main": "dist-electron/main.cjs",
   "build": {
     "appId": "com.autoparts.learning",
     "productName": "汽车及智能穿戴材料学习平台",
@@ -18,7 +21,8 @@
     ],
     "win": {
       "target": "dir",
-      "artifactName": "${productName}.exe"
+      "artifactName": "${productName}.exe",
+      "signAndEditExecutable": false
     },
     "asar": true,
     "extraMetadata": {
@@ -34,8 +38,8 @@
     "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
     "electron:build": "npm run build:no-check && tsc -p electron/tsconfig.json && mv dist-electron/main.js dist-electron/main.cjs && electron-builder",
     "electron:dist": "npm run build:no-check && tsc -p electron/tsconfig.json && mv dist-electron/main.js dist-electron/main.cjs && electron-builder --win",
-    "deploy": "vite build && netlify deploy --prod --dir=dist",
-    "sync-deploy": "node scripts/sync-questions.mjs && vite build && netlify deploy --prod --dir=dist"
+    "deploy": "vite build",
+    "sync-deploy": "node scripts/write-and-deploy.mjs"
   },
   "dependencies": {
     "axios": "^1.13.6",

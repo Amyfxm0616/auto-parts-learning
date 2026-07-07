@@ -113,17 +113,11 @@ export default function GlassSystemView() {
             <GlassDiagram
               categories={glassAssemblyData}
               selectedCategoryId={selectedGlassCatId}
-              selectedPartId={selectedGlassPartId}
               onCategoryClick={(catId) => {
                 setSelectedGlassCatId(catId);
                 setSelectedGlassPartId('');
                 setSelectedGlassVariant(null);
                 setExpandedGlassCats(prev => { const next = new Set(prev); next.add(catId); return next; });
-              }}
-              onPartClick={(catId, partId) => {
-                setSelectedGlassCatId(catId);
-                setSelectedGlassPartId(partId);
-                setSelectedGlassVariant(null);
               }}
             />
           </div>

@@ -1,0 +1,46 @@
+{
+  "name": "auto-parts-learning-app",
+  "productName": "汽车及智能穿戴材料学习平台",
+  "version": "1.0.0",
+  "description": "汽车及智能穿戴材料学习平台",
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
+    "electron:build": "npm run build && tsc -p electron/tsconfig.json && electron-builder"
+  },
+  "build": {
+    "appId": "com.autoparts.learning",
+    "productName": "汽车及智能穿戴材料学习平台",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "dist/vite.svg"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "汽车及智能穿戴材料学习平台"
+    }
+  },
+  "devDependencies": {
+    "@types/node": "*",
+    "electron": "*",
+    "electron-builder": "*",
+    "typescript": "*",
+    "vite": "*"
+  }
+}

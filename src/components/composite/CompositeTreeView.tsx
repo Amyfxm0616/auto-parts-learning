@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { compositeNodes, compositeMap, getChildren, getAncestors } from '../../data/composites';
+import { useState } from 'react';
+import { compositeNodes, compositeMap, getChildren } from '../../data/composites';
 import { useNavigate } from 'react-router-dom';
 import type { CompositeNode } from '../../data/composites';
 
@@ -62,9 +62,7 @@ const PROCESS_GUIDE = [
 // ─── 详情面板 ──────────────────────────────────────────────────────────────────
 
 function DetailPanel({ node, onNavigate }: { node: CompositeNode; onNavigate: () => void }) {
-  const c = RESIN_COLORS[node.resinType ?? 'root'];
   const children = getChildren(node.id);
-  const ancestors = getAncestors(node.id);
 
   // 根节点：显示总体信息
   if (node.level === 'root') {

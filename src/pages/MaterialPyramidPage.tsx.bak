@@ -1,0 +1,341 @@
+import { useState } from 'react';
+import { materials } from '../data/materials';
+import { Link } from 'react-router-dom';
+
+interface PyramidLevel {
+  name: string;
+  temperature: string;
+  color: string;
+  category: 'specialty' | 'engineering' | 'general';
+}
+
+export default function MaterialPyramidPage() {
+  const [selectedLevel, setSelectedLevel] = useState<string | null>(null);
+  const [selectedCrystallinity, setSelectedCrystallinity] = useState<'crystalline' | 'amorphous' | null>(null);
+
+  const levels: PyramidLevel[] = [
+    {
+      name: '特种工程塑料',
+      temperature: '≥ 200°C',
+      color: '#dc2626',
+      category: 'specialty',
+    },
+    {
+      name: '工程塑料',
+      temperature: '150-200°C',
+      color: '#ea580c',
+      category: 'engineering',
+    },
+    {
+      name: '通用塑料',
+      temperature: '< 150°C',
+      color: '#ca8a04',
+      category: 'general',
+    },
+// 按类别和结晶性分类材料  const categorizedMaterials = {    specialty: {      crystalline: materials.filter(m =>        m.category === 'plastic' &&        m.level === 'specialty' &&        m.crystallinity === 'crystalline'      ),      amorphous: materials.filter(m =>        m.category === 'plastic' &&        m.level === 'specialty' &&        m.crystallinity === 'amorphous'      ),    },    engineering: {      crystalline: materials.filter(m =>        m.category === 'plastic' &&        m.level === 'engineering' &&        m.crystallinity === 'crystalline'      ),      amorphous: materials.filter(m =>        m.category === 'plastic' &&        m.level === 'engineering' &&        m.crystallinity === 'amorphous'      ),    },    general: {      crystalline: materials.filter(m =>        m.category === 'plastic' &&        m.level === 'general' &&        m.crystallinity === 'crystalline'      ),      amorphous: materials.filter(m =>        m.category === 'plastic' &&        m.level === 'general' &&        m.crystallinity === 'amorphous'      ),    },  };
+
+  const getFilteredMaterials = () => {
+    if (!selectedLevel || !selectedCrystallinity) return [];
+    const levelMaterials = categorizedMaterials[selectedLevel as keyof typeof categorizedMaterials];
+    return levelMaterials[selectedCrystallinity] || [];
+  };
+
+  const filteredMaterials = getFilteredMaterials();
+
+  return (
+    <div className="px-4 py-8 max-w-7xl mx-auto">
+      <h1 className="text-3xl font-bold text-gray-900 mb-2">材料金字塔</h1>
+      <p className="text-gray-600 mb-8">按耐温性能和结晶性分类的塑料材料体系</p>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* 金字塔图 */}
+        <div className="lg:col-span-2 bg-white rounded-lg shadow-lg p-8">
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold mb-2">温度分级体系</h2>
+            <p className="text-sm text-gray-600">点击金字塔区域查看该类别材料</p>
+          </div>
+
+          <svg viewBox="0 0 800 700" className="w-full h-auto">
+            {/* 背景网格 */}
+            <defs>
+              <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#f3f4f6" strokeWidth="0.5"/>
+              </pattern>
+            </defs>
+            <rect width="800" height="700" fill="url(#grid)" />
+
+            {/* 温度标尺 */}
+            <g>
+              <line x1="50" y1="100" x2="50" y2="600" stroke="#9ca3af" strokeWidth="2" />
+              <text x="30" y="110" className="text-xs fill-gray-600">200°C</text>
+              <text x="30" y="300" className="text-xs fill-gray-600">150°C</text>
+              <text x="30" y="590" className="text-xs fill-gray-600">常温</text>
+
+              {/* 标尺刻度 */}
+              <line x1="45" y1="100" x2="55" y2="100" stroke="#9ca3af" strokeWidth="2" />
+              <line x1="45" y1="280" x2="55" y2="280" stroke="#9ca3af" strokeWidth="2" />
+              <line x1="45" y1="580" x2="55" y2="580" stroke="#9ca3af" strokeWidth="2" />
+            </g>
+
+            {/* 中心分隔线 */}
+            <line x1="400" y1="100" x2="400" y2="580" stroke="#6b7280" strokeWidth="3" strokeDasharray="8,4" />
+
+            {/* 结晶性标签 */}
+            <text x="250" y="650" textAnchor="middle" className="text-base font-bold fill-gray-700">
+              非结晶性（无定形）
+            </text>
+            <text x="550" y="650" textAnchor="middle" className="text-base font-bold fill-gray-700">
+              结晶性
+            </text>
+
+            {/* 特种工程塑料 - 顶层 */}
+            <g>
+              {/* 左侧 - 非结晶 */}
+              <path
+                d="M 300 100 L 100 280 L 400 280 Z"
+                fill={selectedLevel === 'specialty' && selectedCrystallinity === 'amorphous' ? '#b91c1c' : '#dc2626'}
+                stroke="#991b1b"
+                strokeWidth="3"
+                className="cursor-pointer transition-all hover:opacity-80"
+                onClick={() => {
+                  setSelectedLevel('specialty');
+                  setSelectedCrystallinity('amorphous');
+                }}
+              />
+              {/* 右侧 - 结晶 */}
+              <path
+                d="M 500 100 L 400 280 L 700 280 Z"
+                fill={selectedLevel === 'specialty' && selectedCrystallinity === 'crystalline' ? '#b91c1c' : '#dc2626'}
+                stroke="#991b1b"
+                strokeWidth="3"
+                className="cursor-pointer transition-all hover:opacity-80"
+                onClick={() => {
+                  setSelectedLevel('specialty');
+                  setSelectedCrystallinity('crystalline');
+                }}
+              />
+              <text x="400" y="200" textAnchor="middle" className="text-lg font-bold fill-white pointer-events-none">
+                特种工程塑料
+              </text>
+              <text x="400" y="230" textAnchor="middle" className="text-sm fill-white pointer-events-none">
+                ≥ 200°C
+              </text>
+              <text x="400" y="255" textAnchor="middle" className="text-xs fill-white opacity-90 pointer-events-none">
+                ({categorizedMaterials.specialty.amorphous.length + categorizedMaterials.specialty.crystalline.length} 种材料)
+              </text>
+            </g>
+
+            {/* 工程塑料 - 中层 */}
+            <g>
+              {/* 左侧 - 非结晶 */}
+              <path
+                d="M 100 280 L 80 440 L 400 440 L 400 280 Z"
+                fill={selectedLevel === 'engineering' && selectedCrystallinity === 'amorphous' ? '#c2410c' : '#ea580c'}
+                stroke="#9a3412"
+                strokeWidth="3"
+                className="cursor-pointer transition-all hover:opacity-80"
+                onClick={() => {
+                  setSelectedLevel('engineering');
+                  setSelectedCrystallinity('amorphous');
+                }}
+              />
+              {/* 右侧 - 结晶 */}
+              <path
+                d="M 700 280 L 400 280 L 400 440 L 720 440 Z"
+                fill={selectedLevel === 'engineering' && selectedCrystallinity === 'crystalline' ? '#c2410c' : '#ea580c'}
+                stroke="#9a3412"
+                strokeWidth="3"
+                className="cursor-pointer transition-all hover:opacity-80"
+                onClick={() => {
+                  setSelectedLevel('engineering');
+                  setSelectedCrystallinity('crystalline');
+                }}
+              />
+              <text x="400" y="355" textAnchor="middle" className="text-lg font-bold fill-white pointer-events-none">
+                工程塑料
+              </text>
+              <text x="400" y="385" textAnchor="middle" className="text-sm fill-white pointer-events-none">
+                150-200°C
+              </text>
+              <text x="400" y="410" textAnchor="middle" className="text-xs fill-white opacity-90 pointer-events-none">
+                ({categorizedMaterials.engineering.amorphous.length + categorizedMaterials.engineering.crystalline.length} 种材料)
+              </text>
+            </g>
+
+            {/* 通用塑料 - 底层 */}
+            <g>
+              {/* 左侧 - 非结晶 */}
+              <path
+                d="M 80 440 L 70 580 L 400 580 L 400 440 Z"
+                fill={selectedLevel === 'general' && selectedCrystallinity === 'amorphous' ? '#a16207' : '#ca8a04'}
+                stroke="#854d0e"
+                strokeWidth="3"
+                className="cursor-pointer transition-all hover:opacity-80"
+                onClick={() => {
+                  setSelectedLevel('general');
+                  setSelectedCrystallinity('amorphous');
+                }}
+              />
+              {/* 右侧 - 结晶 */}
+              <path
+                d="M 720 440 L 400 440 L 400 580 L 730 580 Z"
+                fill={selectedLevel === 'general' && selectedCrystallinity === 'crystalline' ? '#a16207' : '#ca8a04'}
+                stroke="#854d0e"
+                strokeWidth="3"
+                className="cursor-pointer transition-all hover:opacity-80"
+                onClick={() => {
+                  setSelectedLevel('general');
+                  setSelectedCrystallinity('crystalline');
+                }}
+              />
+              <text x="400" y="505" textAnchor="middle" className="text-lg font-bold fill-white pointer-events-none">
+                通用塑料
+              </text>
+              <text x="400" y="535" textAnchor="middle" className="text-sm fill-white pointer-events-none">
+                {'< 150°C'}
+              </text>
+              <text x="400" y="560" textAnchor="middle" className="text-xs fill-white opacity-90 pointer-events-none">
+                ({categorizedMaterials.general.amorphous.length + categorizedMaterials.general.crystalline.length} 种材料)
+              </text>
+            </g>
+          </svg>
+
+          {/* 图例 */}
+          <div className="mt-6 grid grid-cols-2 gap-4">
+            <div>
+              <h3 className="text-sm font-semibold mb-2">按温度分类</h3>
+              <div className="space-y-2">
+                {levels.map(level => (
+                  <div key={level.category} className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded" style={{ backgroundColor: level.color }}></div>
+                    <div>
+                      <span className="text-sm font-medium">{level.name}</span>
+                      <span className="text-xs text-gray-500 ml-2">{level.temperature}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold mb-2">按结晶性分类</h3>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 border-2 border-gray-400 bg-gray-100"></div>
+                  <span className="text-sm">左侧：非结晶性（无定形）</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 border-2 border-gray-400 bg-white"></div>
+                  <span className="text-sm">右侧：结晶性</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 材料列表 */}
+        <div className="lg:col-span-1">
+          {selectedLevel && selectedCrystallinity ? (
+            <div className="bg-white rounded-lg shadow-lg p-6">
+              <h3 className="text-lg font-semibold mb-2">
+                {levels.find(l => l.category === selectedLevel)?.name}
+              </h3>
+              <p className="text-sm text-gray-600 mb-4">
+                {selectedCrystallinity === 'amorphous' ? '非结晶性（无定形）' : '结晶性'}
+                • {filteredMaterials.length} 种材料
+              </p>
+
+              {filteredMaterials.length > 0 ? (
+                <div className="space-y-3 max-h-[600px] overflow-y-auto">
+                  {filteredMaterials.map(material => (
+                    <Link
+                      key={material.id}
+                      to={`/materials/${material.id}`}
+                      className="block p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all"
+                    >
+                      <div className="font-semibold text-gray-900">{material.name}</div>
+                      {material.nameEn && (
+                        <div className="text-xs text-gray-500 mt-1">{material.nameEn}</div>
+                      )}
+                      {material.description && (
+                        <div className="text-sm text-gray-600 mt-2 line-clamp-2">
+                          {material.description}
+                        </div>
+                      )}
+                      {material.properties && material.properties.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {material.properties.slice(0, 3).map((prop, idx) => (
+                            <span
+                              key={idx}
+                              className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded"
+                            >
+                              {prop}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12 text-gray-500">
+                  <p className="text-lg mb-2">暂无材料数据</p>
+                  <p className="text-sm">该分类下尚未添加材料</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="bg-gray-50 rounded-lg shadow-lg p-12 text-center">
+              <div className="text-6xl mb-4">🔺</div>
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                点击金字塔区域
+              </h3>
+              <p className="text-sm text-gray-600">
+                选择左侧金字塔中的任意区域<br/>
+                查看该类别的材料列表
+              </p>
+              <div className="mt-6 text-xs text-gray-500">
+                <p>• 左侧区域：非结晶性材料</p>
+                <p>• 右侧区域：结晶性材料</p>
+                <p>• 从上到下：耐温性能递减</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 说明文档 */}
+      <div className="mt-8 bg-blue-50 rounded-lg shadow p-6">
+        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+          <span>📚</span>
+          <span>材料金字塔说明</span>
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div>
+            <h3 className="font-semibold text-blue-900 mb-2">横向分类：结晶性</h3>
+            <ul className="space-y-1 text-sm text-blue-800">
+              <li>• <strong>左侧</strong>：非结晶性（无定形）塑料</li>
+              <li>• <strong>右侧</strong>：结晶性塑料</li>
+              <li>• 影响透明度、收缩率、刚性等性能</li>
+            </ul>
+          </div>
+          <div>
+            <h3 className="font-semibold text-blue-900 mb-2">纵向分类：耐温性</h3>
+            <ul className="space-y-1 text-sm text-blue-800">
+              <li>• <strong>顶部</strong>：特种工程塑料（≥200°C）</li>
+              <li>• <strong>中部</strong>：工程塑料（150-200°C）</li>
+              <li>• <strong>底部</strong>：通用塑料（&lt;150°C）</li>
+            </ul>
+          </div>
+          <div>
+            <h3 className="font-semibold text-blue-900 mb-2">应用特点</h3>
+            <ul className="space-y-1 text-sm text-blue-800">
+              <li>• 特种：航空航天、高温环境</li>
+              <li>• 工程：汽车、电子、机械零件</li>
+              <li>• 通用：日用品、包装、管材</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

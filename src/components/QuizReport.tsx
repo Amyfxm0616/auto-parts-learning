@@ -1,7 +1,8 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Trophy, TrendingDown, AlertCircle, ChevronDown, ChevronRight,
-  CheckCircle, XCircle, BookOpen, Target, Calendar, Clock,
+  CheckCircle, XCircle, BookOpen, Target, Calendar, Clock, Lightbulb, ExternalLink,
 } from 'lucide-react';
 import type { QuizSession } from '../data/quizHistory';
 import {
@@ -343,6 +344,30 @@ export default function QuizReport({ session, allSessions, onRetry, onBack, read
                           <p className="text-xs text-blue-800 dark:text-blue-300 mt-1 leading-relaxed">{r.explanation}</p>
                         </div>
                       )}
+                      {(r.relatedMaterialId || r.relatedPartId) && (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {r.relatedMaterialId && (
+                            <Link
+                              to={`/materials/${r.relatedMaterialId}`}
+                              className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-purple-100 text-purple-700 hover:bg-purple-200 transition-colors"
+                              onClick={e => e.stopPropagation()}
+                            >
+                              <BookOpen size={11} /> 查看相关材料
+                              <ExternalLink size={10} />
+                            </Link>
+                          )}
+                          {r.relatedPartId && (
+                            <Link
+                              to={`/parts/${r.relatedPartId}`}
+                              className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors"
+                              onClick={e => e.stopPropagation()}
+                            >
+                              <Target size={11} /> 查看相关零部件
+                              <ExternalLink size={10} />
+                            </Link>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -384,6 +409,158 @@ export default function QuizReport({ session, allSessions, onRetry, onBack, read
         </div>
       )}
 
+      {/* ── 个性化学习建议 ── */}
+      {(() => {
+        const wrongRecs = session.records.filter(r => !r.isCorrect);
+        const materialLinks = Array.from(
+          new Map(
+            wrongRecs
+              .filter(r => r.relatedMaterialId)
+              .map(r => [r.relatedMaterialId!, { id: r.relatedMaterialId!, label: r.category || r.tags[0] || '相关材料' }])
+          ).values()
+        );
+        const partLinks = Array.from(
+          new Map(
+            wrongRecs
+              .filter(r => r.relatedPartId)
+              .map(r => [r.relatedPartId!, { id: r.relatedPartId!, label: r.tags[0] || r.category || '相关零部件' }])
+          ).values()
+        );
+        const hasLinks = materialLinks.length > 0 || partLinks.length > 0;
+        const topWeak = session.weakAreas.filter(a => a.wrong > 0).slice(0, 3);
+        return (
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <Lightbulb size={18} className="text-yellow-500" />
+              <h3 className="font-semibold text-gray-900 dark:text-white">个性化学习建议</h3>
+            </div>
+            <div className="space-y-4">
+
+              {/* 1. 针对薄弱知识点的学习路径 */}
+              {topWeak.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">薄弱知识点学习路径</p>
+                  <div className="space-y-2">
+                    {topWeak.map((area, i) => {
+                      const pct = Math.round((1 - area.errorRate) * 100);
+                      const steps = [
+                        `阅读"${area.label}"相关章节，整理材料属性与应用场景`,
+                        `在材料库中检索"${area.label}"，对比相近材料的性能差异`,
+                        `重做该知识点错题，直至正确率达到 80% 以上`,
+                      ];
+                      return (
+                        <div key={area.label} className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                              {i + 1}. {area.label}
+                            </span>
+                            <span className={`text-xs font-semibold ${pct < 60 ? 'text-red-500' : 'text-yellow-600'}`}>
+                              正确率 {pct}%
+                            </span>
+                          </div>
+                          <ol className="space-y-1">
+                            {steps.map((step, si) => (
+                              <li key={si} className="flex items-start gap-2 text-xs text-gray-600 dark:text-gray-400">
+                                <span className="flex-shrink-0 w-4 h-4 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-[10px]">
+                                  {si + 1}
+                                </span>
+                                {step}
+                              </li>
+                            ))}
+                          </ol>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* 2. 推荐学习资源快捷入口 */}
+              {hasLinks && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">推荐学习资源（基于错题）</p>
+                  <div className="flex flex-wrap gap-2">
+                    {materialLinks.map(m => (
+                      <Link key={m.id} to={`/materials/${m.id}`}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 text-xs font-medium border border-purple-200 dark:border-purple-800 hover:bg-purple-100 transition-colors">
+                        <BookOpen size={12} /> {m.label} 材料详情
+                        <ExternalLink size={10} />
+                      </Link>
+                    ))}
+                    {partLinks.map(p => (
+                      <Link key={p.id} to={`/parts/${p.id}`}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-xs font-medium border border-blue-200 dark:border-blue-800 hover:bg-blue-100 transition-colors">
+                        <Target size={12} /> {p.label} 零部件详情
+                        <ExternalLink size={10} />
+                      </Link>
+                    ))}
+                    <Link to="/materials"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs font-medium hover:bg-gray-200 transition-colors">
+                      <BookOpen size={12} /> 浏览全部材料库
+                    </Link>
+                    <Link to="/parts"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs font-medium hover:bg-gray-200 transition-colors">
+                      <Target size={12} /> 浏览汽车零部件
+                    </Link>
+                  </div>
+                </div>
+              )}
+
+              {/* 3. 下次测验策略 */}
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">下次测验策略</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {[
+                    {
+                      icon: '🎯',
+                      title: session.accuracy < 60 ? '专项练习' : session.accuracy < 85 ? '混合题型' : '挑战难度',
+                      desc: session.accuracy < 60
+                        ? '先选"简单"难度，按知识点逐个击破，建立基础信心'
+                        : session.accuracy < 85
+                        ? '选"全部题目"混合练习，检验各类题型综合掌握水平'
+                        : '选"困难"难度或全题型测验，冲击更高分数',
+                    },
+                    {
+                      icon: '⏱️',
+                      title: '控制答题节奏',
+                      desc: `本次平均每题用时 ${session.totalQuestions > 0 ? Math.round(session.duration / session.totalQuestions) : 0} 秒，${
+                        session.duration / session.totalQuestions < 15
+                          ? '答题较快，建议放慢节奏仔细审题'
+                          : session.duration / session.totalQuestions > 60
+                          ? '答题较慢，熟记材料参数可提升速度'
+                          : '答题节奏适中，保持即可'
+                      }`,
+                    },
+                    {
+                      icon: '📒',
+                      title: '错题本整理',
+                      desc: `本次共 ${session.records.filter(r => !r.isCorrect).length} 道错题，建议记录到"我的笔记"，定期回顾巩固`,
+                    },
+                  ].map((tip, i) => (
+                    <div key={i} className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-100 dark:border-indigo-800">
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <span className="text-base">{tip.icon}</span>
+                        <span className="text-xs font-semibold text-indigo-800 dark:text-indigo-300">{tip.title}</span>
+                      </div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">{tip.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 4. 跳转笔记 */}
+              <div className="flex items-center gap-2 pt-1">
+                <Link to="/notes"
+                  className="inline-flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 hover:underline">
+                  <BookOpen size={12} /> 前往"我的笔记"记录学习心得 →
+                </Link>
+              </div>
+
+            </div>
+          </div>
+        );
+      })()}
+
       {/* ── 学习计划 ── */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-5">
         <div className="flex items-center gap-2 mb-4">
@@ -415,7 +592,7 @@ export default function QuizReport({ session, allSessions, onRetry, onBack, read
             <span className="text-xs text-gray-400">最近 {recentSessions.length} 次</span>
           </div>
           <div className="flex items-end gap-2 h-24">
-            {recentSessions.map((s, i) => {
+            {recentSessions.map((s) => {
               const isCurrentSession = s.id === session.id;
               const barH = Math.max(8, Math.round((s.accuracy / 100) * 80));
               const gc2 = GRADE_CONFIG[s.grade];

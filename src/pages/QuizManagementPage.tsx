@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Save, X, Image as ImageIcon, Upload, Sparkles, FileText, CheckCircle2, Globe, Loader2 } from 'lucide-react';
 import type { Question } from '../data/questions';
-import { getQuestions, addQuestion, updateQuestion, deleteQuestion, initializeQuestions } from '../data/questions';
+import { getQuestions, addQuestion, updateQuestion, deleteQuestion, initializeQuestions, markQuestionsSynced } from '../data/questions';
 import { autoParseQuestion, autoParseMultipleQuestions } from '../services/questionParser';
 
 export default function QuizManagementPage() {
@@ -17,11 +17,26 @@ export default function QuizManagementPage() {
   const [parsedQuestions, setParsedQuestions] = useState<Partial<Question>[]>([]);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
   const [syncError, setSyncError] = useState('');
+  const [isInitializing, setIsInitializing] = useState(true);
   const isElectron = typeof window !== 'undefined' && !!(window as any).electronAPI?.isElectron;
 
   useEffect(() => {
-    initializeQuestions();
-    loadQuestions();
+    let cancelled = false;
+
+    const load = async () => {
+      setIsInitializing(true);
+      await initializeQuestions();
+      if (!cancelled) {
+        loadQuestions();
+        setIsInitializing(false);
+      }
+    };
+
+    load();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const loadQuestions = () => {
@@ -94,7 +109,7 @@ export default function QuizManagementPage() {
     if (successCount > 0) {
       alert(`成功导入 ${successCount} 道题目${failCount > 0 ? `，失败 ${failCount} 道` : ''}`);
       loadQuestions();
-      if (isElectron) handleSyncToNetlify();
+      if (isElectron) handleSyncPublishedQuestions();
     } else {
       alert('导入失败，请检查题目格式');
     }
@@ -123,14 +138,15 @@ export default function QuizManagementPage() {
     setParsedQuestions([]);
   };
 
-  const handleSyncToNetlify = async () => {
+  const handleSyncPublishedQuestions = async () => {
     if (syncStatus === 'syncing') return;
     setSyncStatus('syncing');
     setSyncError('');
     try {
       const allQuestions = getQuestions();
-      const result = await (window as any).electronAPI.syncToNetlify(JSON.stringify(allQuestions));
+      const result = await (window as any).electronAPI.syncPublishedQuestions(JSON.stringify(allQuestions));
       if (result.success) {
+        markQuestionsSynced(allQuestions);
         setSyncStatus('success');
         setTimeout(() => setSyncStatus('idle'), 4000);
       } else {
@@ -154,7 +170,7 @@ export default function QuizManagementPage() {
     if (window.confirm('确定要删除这道题目吗？')) {
       deleteQuestion(id);
       loadQuestions();
-      if (isElectron) handleSyncToNetlify();
+      if (isElectron) handleSyncPublishedQuestions();
     }
   };
 
@@ -231,7 +247,7 @@ export default function QuizManagementPage() {
     setAutoParseInput('');
     setParsedQuestions([]);
     loadQuestions();
-    if (isElectron) handleSyncToNetlify();
+    if (isElectron) handleSyncPublishedQuestions();
   };
   const getCorrectAnswerDefault = (type: Question['type']): Question['correctAnswer'] => {
     switch (type) {
@@ -397,6 +413,14 @@ export default function QuizManagementPage() {
 
   const categories = Array.from(new Set(questions.map(q => q.category).filter(Boolean))) as string[];
 
+  if (isInitializing) {
+    return (
+      <div className="px-4 py-8 max-w-7xl mx-auto text-center text-gray-500 dark:text-gray-400">
+        正在加载题库...
+      </div>
+    );
+  }
+
   return (
     <div className="px-4 py-8 max-w-7xl mx-auto">
       {/* 页面标题 */}
@@ -480,7 +504,7 @@ export default function QuizManagementPage() {
           {/* 同步到网页按钮（仅桌面 Electron 显示） */}
           {isElectron && (
             <button
-              onClick={handleSyncToNetlify}
+              onClick={handleSyncPublishedQuestions}
               disabled={syncStatus === 'syncing'}
               className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 text-white ${
                 syncStatus === 'syncing' ? 'bg-blue-400 cursor-not-allowed' :
@@ -488,7 +512,7 @@ export default function QuizManagementPage() {
                 syncStatus === 'error'   ? 'bg-red-600 hover:bg-red-700' :
                 'bg-blue-600 hover:bg-blue-700'
               }`}
-              title={syncStatus === 'error' ? syncError : '将当前题库同步到 Netlify 网页版'}
+              title={syncStatus === 'error' ? syncError : '将当前题库同步到 GitHub Pages 发布源'}
             >
               {syncStatus === 'syncing' ? <Loader2 size={18} className="animate-spin" /> :
                syncStatus === 'success' ? <CheckCircle2 size={18} /> :

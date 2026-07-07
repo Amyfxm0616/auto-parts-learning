@@ -1,0 +1,39 @@
+  // 按类别和结晶性分类材料
+  const categorizedMaterials = {
+    specialty: {
+      crystalline: materials.filter(m =>
+        m.category === 'plastic' &&
+        m.level === 'specialty' &&
+        m.crystallinity === 'crystalline'
+      ),
+      amorphous: materials.filter(m =>
+        m.category === 'plastic' &&
+        m.level === 'specialty' &&
+        m.crystallinity === 'amorphous'
+      ),
+    },
+    engineering: {
+      crystalline: materials.filter(m =>
+        m.category === 'plastic' &&
+        m.level === 'engineering' &&
+        m.crystallinity === 'crystalline'
+      ),
+      amorphous: materials.filter(m =>
+        m.category === 'plastic' &&
+        m.level === 'engineering' &&
+        m.crystallinity === 'amorphous'
+      ),
+    },
+    general: {
+      crystalline: materials.filter(m =>
+        m.category === 'plastic' &&
+        m.level === 'general' &&
+        m.crystallinity === 'crystalline'
+      ),
+      amorphous: materials.filter(m =>
+        m.category === 'plastic' &&
+        m.level === 'general' &&
+        m.crystallinity === 'amorphous'
+      ),
+    },
+  };

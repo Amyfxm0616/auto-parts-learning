@@ -37,6 +37,7 @@ export default function QuizPage() {
   const [allQuestions, setAllQuestions] = useState<Question[]>([]);
   const [quizRecords, setQuizRecords] = useState<QuizRecord[]>([]);
   const [adminAccess, setAdminAccess] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
   const isElectron = typeof window !== 'undefined' && !!(window as any).electronAPI?.isElectron;
 
   // 检测 URL token，存入 sessionStorage
@@ -58,6 +59,7 @@ export default function QuizPage() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | number[] | string | string[] | boolean | null>(null);
   const [showResult, setShowResult] = useState(false);
+  const [activeOptionIndex, setActiveOptionIndex] = useState(0);
 
   // 计时 & 结果
   const [quizStartTime, setQuizStartTime] = useState<number | null>(null);
@@ -67,8 +69,22 @@ export default function QuizPage() {
   const [currentSession, setCurrentSession] = useState<QuizSession | null>(null);
 
   useEffect(() => {
-    initializeQuestions();
-    setAllQuestions(getQuestions());
+    let cancelled = false;
+
+    const loadQuestions = async () => {
+      setIsInitializing(true);
+      await initializeQuestions();
+      if (!cancelled) {
+        setAllQuestions(getQuestions());
+        setIsInitializing(false);
+      }
+    };
+
+    loadQuestions();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -96,6 +112,7 @@ export default function QuizPage() {
 
   const filteredQuestions = getFilteredQuestions(selectedType, selectedDifficulty);
   const currentQuestion = filteredQuestions[currentQuestionIndex];
+  const isLastQuestion = currentQuestionIndex === filteredQuestions.length - 1;
 
   const toggleType = (type: string) => {
     setExpandedTypes(prev => {
@@ -144,20 +161,78 @@ export default function QuizPage() {
       const b = [...(currentQuestion.correctAnswer as number[])].sort();
       return a.length === b.length && a.every((v, i) => v === b[i]);
     } else if (currentQuestion.type === 'fill' && Array.isArray(selectedAnswer)) {
-      return (selectedAnswer as string[]).every((ans, i) => {
-        const correct = (currentQuestion.correctAnswer as string[])[i] || '';
-        return matchFillBlank(ans, correct);
-      });
+      return matchFillBlanks(
+        selectedAnswer as string[],
+        currentQuestion.correctAnswer as string[]
+      ).isAllCorrect;
     } else if (currentQuestion.type === 'essay') {
-      return typeof selectedAnswer === 'string' && selectedAnswer.trim().length > 0;
+      return typeof selectedAnswer === 'string' && matchEssayAnswer(selectedAnswer, currentQuestion);
     }
     return false;
   };
 
-  /** 填空题单空匹配：正确答案含"或"时，用户答案与任一分支匹配即视为正确 */
+  /** 去除标点和排序连接符，只保留关键字（汉字、字母、数字） */
+  const stripPunct = (s: string): string =>
+    s.replace(/[、，。；：""''！？—…·\s,\.;:!?\-_\/\\<>≤≥=]/g, '').toLowerCase();
+
+  const matchEssayAnswer = (userAnswer: string | null, question: Question): boolean => {
+    const normalizedAnswer = stripPunct(userAnswer || '');
+    if (!normalizedAnswer) return false;
+
+    const keywords = (question.keywords ?? []).map(keyword => stripPunct(keyword)).filter(Boolean);
+    if (keywords.length > 0) {
+      return keywords.some(keyword => normalizedAnswer.includes(keyword) || keyword.includes(normalizedAnswer));
+    }
+
+    if (typeof question.correctAnswer !== 'string') return false;
+    const fallbackAnswer = stripPunct(question.correctAnswer);
+    return !!fallbackAnswer && (normalizedAnswer.includes(fallbackAnswer) || fallbackAnswer.includes(normalizedAnswer));
+  };
+
+  /** 填空题单空匹配：支持"或"多答案、忽略标点、关键字包含匹配 */
   const matchFillBlank = (userAns: string | undefined, correct: string): boolean => {
-    const user = (userAns || '').trim().toLowerCase();
-    return correct.split('或').some(alt => alt.trim().toLowerCase() === user);
+    const user = stripPunct(userAns || '');
+    if (!user) return false;
+    return correct.split('或').some(alt => {
+      const a = stripPunct(alt);
+      return a === user || a.includes(user) || user.includes(a);
+    });
+  };
+
+  /**
+   * 填空题整体匹配：先按位置精确匹配，失败则做集合匹配（顺序无关）。
+   * 返回每个空的匹配结果，以及整体是否正确。
+   */
+  const matchFillBlanks = (
+    userAnswers: string[],
+    correctAnswers: string[]
+  ): { isAllCorrect: boolean; blankResults: Array<{ isCorrect: boolean; refAnswer: string }> } => {
+    // 1. 先按位置匹配
+    const byPosition = userAnswers.map((ans, i) => ({
+      isCorrect: matchFillBlank(ans, correctAnswers[i] || ''),
+      refAnswer: correctAnswers[i] || '',
+    }));
+    if (byPosition.every(r => r.isCorrect)) {
+      return { isAllCorrect: true, blankResults: byPosition };
+    }
+
+    // 2. 顺序无关集合匹配（贪心）
+    const remaining = correctAnswers.map((c, i) => ({ c, i }));
+    const blankResults = userAnswers.map(ans => {
+      const idx = remaining.findIndex(({ c }) => matchFillBlank(ans, c));
+      if (idx !== -1) {
+        const { c } = remaining[idx];
+        remaining.splice(idx, 1);
+        return { isCorrect: true, refAnswer: c };
+      }
+      return { isCorrect: false, refAnswer: '' };
+    });
+    const isAllCorrect = blankResults.every(r => r.isCorrect);
+    // 对于判错的空，补充参考答案（取位置对应的原始答案）
+    blankResults.forEach((r, i) => {
+      if (!r.isCorrect) r.refAnswer = correctAnswers[i] || '';
+    });
+    return { isAllCorrect, blankResults };
   };
 
   const handleSubmit = () => {
@@ -176,6 +251,96 @@ export default function QuizPage() {
     localStorage.setItem('quizRecords', JSON.stringify(updated));
     setShowResult(true);
   };
+
+  const handleFinishQuiz = () => {
+    const finishedAt = Date.now();
+    const questionMap = new Map(allQuestions.map(q => [q.id, q]));
+    const session = buildSession({
+      sessionRecords: [...sessionRecords].map(r => ({
+        questionId: r.questionId,
+        userAnswer: r.userAnswer,
+        isCorrect: r.isCorrect,
+      })),
+      questionMap,
+      startedAt: quizStartTime ?? finishedAt - elapsedSeconds * 1000,
+      finishedAt,
+      quizType: selectedType,
+      quizDifficulty: selectedDifficulty,
+    });
+    saveSession(session);
+    setCurrentSession(session);
+    setIsQuizFinished(true);
+  };
+
+  useEffect(() => {
+    setActiveOptionIndex(0);
+  }, [currentQuestionIndex, currentQuestion?.id]);
+
+  useEffect(() => {
+    const isChoiceQuestion = currentQuestion?.type === 'single' || currentQuestion?.type === 'multiple' || currentQuestion?.type === 'boolean';
+    const currentDisplayOptions = currentQuestion?.type === 'boolean'
+      ? (currentQuestion.options ?? ['正确', '错误'])
+      : currentQuestion?.options;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const tagName = target?.tagName;
+      if (tagName === 'INPUT' || tagName === 'TEXTAREA') return;
+
+      if (showResult && event.key === 'Enter') {
+        event.preventDefault();
+        if (isLastQuestion) {
+          handleFinishQuiz();
+        } else {
+          handleNext();
+        }
+        return;
+      }
+
+      if (!isChoiceQuestion || !currentDisplayOptions || showResult) return;
+
+      if (event.key === 'ArrowDown' || event.key === 'ArrowRight') {
+        event.preventDefault();
+        setActiveOptionIndex(prev => (prev + 1) % currentDisplayOptions.length);
+        return;
+      }
+
+      if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') {
+        event.preventDefault();
+        setActiveOptionIndex(prev => (prev - 1 + currentDisplayOptions.length) % currentDisplayOptions.length);
+        return;
+      }
+
+      const upperKey = event.key.toUpperCase();
+      const letterIndex = upperKey.length === 1 ? upperKey.charCodeAt(0) - 65 : -1;
+      if (letterIndex >= 0 && letterIndex < currentDisplayOptions.length) {
+        event.preventDefault();
+        setActiveOptionIndex(letterIndex);
+        if (currentQuestion.type === 'multiple') {
+          updateSelectedAnswer(letterIndex);
+        } else {
+          setSelectedAnswer(letterIndex);
+        }
+        return;
+      }
+
+      if (event.key === ' ' || event.key === 'Enter') {
+        event.preventDefault();
+        if (event.key === 'Enter' && selectedAnswer !== null) {
+          handleSubmit();
+          return;
+        }
+        if (currentQuestion.type === 'multiple') {
+          updateSelectedAnswer(activeOptionIndex);
+        } else {
+          setSelectedAnswer(activeOptionIndex);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeOptionIndex, currentQuestion, selectedAnswer, showResult, isLastQuestion, sessionRecords, allQuestions, quizStartTime, elapsedSeconds, selectedType, selectedDifficulty]);
 
   const handleNext = () => {
     if (currentQuestionIndex < filteredQuestions.length - 1) {
@@ -201,6 +366,14 @@ export default function QuizPage() {
   };
 
   // ─── 起始页（树状结构）───────────────────────────────────────
+  if (isInitializing) {
+    return (
+      <div className="px-4 py-8 max-w-3xl mx-auto text-center text-gray-500 dark:text-gray-400">
+        正在加载题库...
+      </div>
+    );
+  }
+
   if (!isQuizStarted) {
     const stats = getStats();
     const typeOrder: QuestionType[] = ['fill', 'boolean', 'single', 'multiple', 'essay'];
@@ -388,11 +561,33 @@ export default function QuizPage() {
 
   // ─── 答题页 ──────────────────────────────────────────────────
   const typeCfg = TYPE_CONFIG[selectedType] || TYPE_CONFIG['all'];
-  const isLastQuestion = currentQuestionIndex === filteredQuestions.length - 1;
   // 判断题若数据中缺 options，自动补 ['正确', '错误']
   const displayOptions = currentQuestion.type === 'boolean'
     ? (currentQuestion.options ?? ['正确', '错误'])
     : currentQuestion.options;
+  const selectionHint = currentQuestion.type === 'single'
+    ? '单选题：请选择 1 个答案'
+    : currentQuestion.type === 'multiple'
+      ? '多选题：可选择多个答案'
+      : currentQuestion.type === 'boolean'
+        ? '判断题：请选择“正确”或“错误”'
+        : null;
+  const selectedOptionLabels = Array.isArray(selectedAnswer)
+    ? (selectedAnswer as number[]).map(index => String.fromCharCode(65 + index))
+    : typeof selectedAnswer === 'number'
+      ? [String.fromCharCode(65 + selectedAnswer)]
+      : [];
+  const selectionStatus = !showResult && (currentQuestion.type === 'single' || currentQuestion.type === 'multiple' || currentQuestion.type === 'boolean')
+    ? currentQuestion.type === 'multiple'
+      ? (selectedOptionLabels.length > 0 ? `已选 ${selectedOptionLabels.length} 项：${selectedOptionLabels.join('、')}` : '当前未选择任何选项')
+      : (selectedOptionLabels[0] ? `当前选择：${selectedOptionLabels[0]}` : '当前未选择选项')
+    : null;
+  const currentRecord = showResult ? sessionRecords[sessionRecords.length - 1] : null;
+  const resultBanner = showResult
+    ? currentRecord?.isCorrect
+      ? { text: '回答正确', className: 'mb-6 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-green-700' }
+      : { text: '回答错误', className: 'mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-700' }
+    : null;
 
   return (
     <div className="px-4 py-8 max-w-3xl mx-auto">
@@ -440,9 +635,36 @@ export default function QuizPage() {
         </div>
 
         {/* 题目 */}
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
           {currentQuestion.question}
         </h2>
+
+        {selectionHint && (
+          <div className="mb-3 inline-flex items-center rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 border border-blue-200">
+            {selectionHint}
+          </div>
+        )}
+
+        {selectionStatus && (
+          <div className="mb-6 text-sm text-gray-600 dark:text-gray-300">
+            {selectionStatus}
+          </div>
+        )}
+
+        {!showResult && (currentQuestion.type === 'single' || currentQuestion.type === 'multiple' || currentQuestion.type === 'boolean') && (
+          <div className="mb-6 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-600">
+            键盘提示：A/B/C/D 直接选择，↑↓/←→ 切换，空格选择，Enter 提交
+          </div>
+        )}
+
+        {resultBanner && (
+          <div className={resultBanner.className}>
+            <div className="flex items-center justify-between gap-3">
+              <span className="font-semibold">{resultBanner.text}</span>
+              <span className="text-sm opacity-80">按 Enter {isLastQuestion ? '完成测验' : '进入下一题'}</span>
+            </div>
+          </div>
+        )}
 
         {/* 题目配图：所有题型均支持多图（按 a/b/c 标注），兼容旧的单图 imageUrl */}
         {currentQuestion.questionImages && currentQuestion.questionImages.length > 0 ? (
@@ -479,25 +701,51 @@ export default function QuizPage() {
                 : Array.isArray(currentQuestion.correctAnswer)
                   ? (currentQuestion.correctAnswer as number[]).includes(index)
                   : currentQuestion.correctAnswer === index;
+              const isMultipleChoice = currentQuestion.type === 'multiple';
+              const shouldShowActiveMarker = isSelected || (showResult && isCorrect);
 
-              let cls = 'w-full text-left px-6 py-4 border-2 rounded-xl transition-colors ';
+              let cls = 'w-full text-left px-6 py-4 border-2 rounded-xl transition-all duration-200 ';
               if (showResult) {
-                cls += isCorrect ? 'border-green-500 bg-green-50 text-green-900'
-                  : isSelected ? 'border-red-500 bg-red-50 text-red-900'
-                  : 'border-gray-200 text-gray-500';
+                cls += isCorrect ? 'border-green-500 bg-green-50 text-green-900 cursor-not-allowed'
+                  : isSelected ? 'border-red-500 bg-red-50 text-red-900 cursor-not-allowed'
+                  : 'border-gray-200 text-gray-500 cursor-not-allowed';
               } else {
-                cls += isSelected ? 'border-blue-500 bg-blue-50 text-blue-900'
-                  : 'border-gray-200 dark:border-gray-600 hover:border-blue-300 text-gray-900 dark:text-gray-100';
+                cls += isSelected ? 'border-blue-500 bg-blue-50 text-blue-900 shadow-sm scale-[1.01]'
+                  : 'border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-100 hover:border-blue-300 hover:bg-blue-50/60 hover:-translate-y-0.5 hover:shadow-sm';
+                if (index === activeOptionIndex) {
+                  cls += ' ring-2 ring-blue-200 ring-offset-2';
+                }
               }
+
+              const markerClass = showResult
+                ? isCorrect
+                  ? 'border-green-500 bg-white text-green-600'
+                  : isSelected
+                    ? 'border-red-500 bg-white text-red-600'
+                    : 'border-gray-300 bg-white text-transparent dark:bg-gray-800'
+                : isSelected
+                  ? 'border-blue-500 bg-white text-blue-600'
+                  : 'border-gray-300 bg-white text-transparent dark:bg-gray-800';
 
               return (
                 <button key={index} onClick={() => {
                   if (currentQuestion.type === 'multiple') updateSelectedAnswer(index);
                   else if (!showResult) setSelectedAnswer(index);
-                }} disabled={showResult && currentQuestion.type !== 'multiple'} className={cls}>
+                }} disabled={showResult} className={cls}>
                   <div className="flex items-center gap-3">
-                    <span className="font-semibold">{String.fromCharCode(65 + index)}.</span>
+                    <span className={`relative flex h-5 w-5 shrink-0 items-center justify-center border-2 ${isMultipleChoice ? 'rounded-sm' : 'rounded-full'} ${markerClass}`}>
+                      {isMultipleChoice
+                        ? shouldShowActiveMarker
+                          ? <span className="text-xs font-bold leading-none">✓</span>
+                          : null
+                        : <span className={`h-2.5 w-2.5 rounded-full bg-current transition-opacity ${shouldShowActiveMarker ? 'opacity-100' : 'opacity-0'}`} />}
+                    </span>
+                    <span className={`font-semibold ${isSelected && !showResult ? 'text-blue-700' : ''}`}>{String.fromCharCode(65 + index)}.</span>
                     <span className="flex-1">{option}</span>
+                    {!showResult && index === activeOptionIndex && (
+                      <span className="text-xs font-medium text-gray-500">键盘焦点</span>
+                    )}
+                    {isSelected && !showResult && <span className="text-xs font-medium text-blue-600">已选择</span>}
                     {showResult && isCorrect && <span className="text-green-600 font-bold">✓</span>}
                     {showResult && isSelected && !isCorrect && <span className="text-red-600 font-bold">✗</span>}
                   </div>
@@ -508,7 +756,14 @@ export default function QuizPage() {
         )}
 
         {/* 填空题 */}
-        {currentQuestion.type === 'fill' && (
+        {currentQuestion.type === 'fill' && (() => {
+          const fillBlankResults = showResult
+            ? matchFillBlanks(
+                Array.isArray(selectedAnswer) ? (selectedAnswer as string[]) : [],
+                currentQuestion.correctAnswer as string[]
+              ).blankResults
+            : null;
+          return (
           <div className="space-y-4 mb-6">
             {Array.from({ length: currentQuestion.fillBlanks || 1 }).map((_, index) => (
               <div key={index}>
@@ -536,28 +791,22 @@ export default function QuizPage() {
                     placeholder="请填写答案"
                     className={`flex-1 px-4 py-2 border-2 rounded-lg focus:ring-2 focus:ring-orange-400 dark:bg-gray-700 dark:text-white ${
                       showResult
-                        ? (matchFillBlank(
-                            Array.isArray(selectedAnswer) ? (selectedAnswer as string[])[index] : undefined,
-                            (currentQuestion.correctAnswer as string[])[index] || ''
-                          ) ? 'border-green-400 bg-green-50' : 'border-red-400 bg-red-50')
+                        ? (fillBlankResults?.[index]?.isCorrect ? 'border-green-400 bg-green-50' : 'border-red-400 bg-red-50')
                         : 'border-gray-300'
                     }`}
                   />
                   {showResult && (() => {
-                    const correct = (currentQuestion.correctAnswer as string[])[index] || '';
-                    const isBlankCorrect = matchFillBlank(
-                      Array.isArray(selectedAnswer) ? (selectedAnswer as string[])[index] : undefined,
-                      correct
-                    );
-                    return isBlankCorrect
+                    const blankRes = fillBlankResults?.[index];
+                    return blankRes?.isCorrect
                       ? <span className="text-sm font-medium text-green-700 whitespace-nowrap">✓ 正确</span>
-                      : <span className="text-sm font-medium text-red-600 whitespace-nowrap">参考答案：{correct}</span>;
+                      : <span className="text-sm font-medium text-red-600 whitespace-nowrap">参考答案：{blankRes?.refAnswer ?? (currentQuestion.correctAnswer as string[])[index] ?? ''}</span>;
                   })()}
                 </div>
               </div>
             ))}
           </div>
-        )}
+          );
+        })()}
 
         {/* 简答题 */}
         {currentQuestion.type === 'essay' && (
@@ -606,25 +855,7 @@ export default function QuizPage() {
                 下一题
               </button>
             ) : (
-              <button onClick={() => {
-                const finishedAt = Date.now();
-                const questionMap = new Map(allQuestions.map(q => [q.id, q]));
-                const session = buildSession({
-                  sessionRecords: [...sessionRecords].map(r => ({
-                    questionId: r.questionId,
-                    userAnswer: r.userAnswer,
-                    isCorrect: r.isCorrect,
-                  })),
-                  questionMap,
-                  startedAt: quizStartTime ?? finishedAt - elapsedSeconds * 1000,
-                  finishedAt,
-                  quizType: selectedType,
-                  quizDifficulty: selectedDifficulty,
-                });
-                saveSession(session);
-                setCurrentSession(session);
-                setIsQuizFinished(true);
-              }}
+              <button onClick={handleFinishQuiz}
                 className="flex-1 bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 transition-colors">
                 完成测验
               </button>

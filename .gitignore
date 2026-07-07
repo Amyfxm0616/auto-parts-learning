@@ -28,3 +28,13 @@ nul
 
 # Local Netlify folder
 .netlify
+
+# Generated build and packaging artifacts
+dist-electron/
+dist[0-9]*/
+dist[0-9]*-deploy.zip
+dist-new-deploy.zip
+electron-cache/
+release/
+release-new/
+temp-pack.asar

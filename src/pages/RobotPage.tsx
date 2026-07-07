@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { robotAssemblyData, type RobotAssembly, type RobotPart } from '../data/robotAssembly';
+import { robotAssemblyData, type RobotPart } from '../data/robotAssembly';
 import RobotBodyDiagram from '../components/RobotBodyDiagram';
 
 const COLOR_MAP: Record<string, { bg: string; light: string; border: string; text: string; badge: string; hover: string }> = {
