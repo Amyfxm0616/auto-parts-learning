@@ -1,0 +1,33 @@
+.page-knowledge .knowledge-quick-links {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-16);
+}
+
+.page-knowledge .knowledge-link-card h3 {
+  font-size: var(--font-size-18);
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--space-8);
+}
+
+.page-knowledge .knowledge-link-card p {
+  color: var(--text-secondary);
+}
+
+.page-knowledge .knowledge-two-column {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-16);
+}
+
+@media (max-width: 1279px) {
+  .page-knowledge .knowledge-quick-links {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1023px) {
+  .page-knowledge .knowledge-two-column {
+    grid-template-columns: 1fr;
+  }
+}

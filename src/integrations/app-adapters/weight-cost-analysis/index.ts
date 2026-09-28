@@ -1,0 +1,1 @@
+export { weightCostAnalysisAdapter } from './adapter';

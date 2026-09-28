@@ -154,15 +154,15 @@ export const partSystems: PartSystem[] = [
     name: '自动驾驶硬件',
     icon: '🤖',
     parts: [],
-    description: '自动驾驶传感器和计算单元',
-    subspecialties: ['摄像头', '激光雷达', '毫米波雷达', '超声波雷达', '计算平台']
+    description: '自动驾驶硬件专用树状视图，按摄像头系统、光学/反射系统、雷达系统与预留模块展示总成、分总成及零件材料工艺信息',
+    subspecialties: ['摄像头系统', '光学/反射系统', '雷达系统', '其他自动驾驶模块']
   },
   {
     id: 'sys-009',
     name: '车机硬件',
     icon: '💻',
     parts: [],
-    description: '车载娱乐和信息系统硬件',
-    subspecialties: ['中控屏', '仪表屏', '抬头显示', '音响系统', '通信模块']
+    description: '车机硬件专用树状视图，按显示系统、音响系统、控制模块与通信接收模块展示总成、分总成及零件材料工艺信息',
+    subspecialties: ['显示系统', '音响系统', '控制模块', '通信与接收模块', '其他HMI模块']
   }
 ];

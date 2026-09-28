@@ -1,0 +1,84 @@
+.page-apps .apps-toolbar {
+  display: flex;
+  gap: var(--space-12);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.page-apps .apps-toolbar input,
+.page-apps .apps-toolbar select {
+  min-width: 220px;
+}
+
+.page-apps .app-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-16);
+}
+
+.page-apps .app-card {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.page-apps .app-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.page-apps .app-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-12);
+  margin-bottom: var(--space-12);
+}
+
+.page-apps .app-card-header h3 {
+  font-size: var(--font-size-18);
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--space-4);
+}
+
+.page-apps .app-card-header span {
+  color: var(--text-muted);
+  font-size: var(--font-size-12);
+}
+
+.page-apps .app-desc {
+  color: var(--text-secondary);
+  min-height: 44px;
+  margin-bottom: var(--space-12);
+}
+
+.page-apps .app-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8);
+  margin-bottom: var(--space-12);
+}
+
+.page-apps .app-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-12);
+  color: var(--text-muted);
+  font-size: var(--font-size-12);
+  margin-bottom: var(--space-16);
+}
+
+.page-apps .app-actions {
+  display: flex;
+  gap: var(--space-12);
+}
+
+@media (max-width: 1279px) {
+  .page-apps .app-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1023px) {
+  .page-apps .app-grid {
+    grid-template-columns: 1fr;
+  }
+}

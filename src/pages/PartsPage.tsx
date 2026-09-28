@@ -17,10 +17,12 @@ import ThermalManagementSystemView from '../components/system-views/ThermalManag
 import ExtendedRangeSystemView from '../components/system-views/ExtendedRangeSystemView';
 import PowerDriveSystemView from '../components/system-views/PowerDriveSystemView';
 import ChassisSystemView from '../components/system-views/ChassisSystemView';
+import HmiSystemView from '../components/system-views/HmiSystemView';
+import AutonomousDrivingSystemView from '../components/system-views/AutonomousDrivingSystemView';
 
-const DEDICATED_SYSTEM_IDS = new Set(['sys-003', 'sys-005', 'sys-007']);
+const DEDICATED_SYSTEM_IDS = new Set(['sys-003', 'sys-005', 'sys-007', 'sys-008', 'sys-009']);
 
-const CURRENT_VERSION = '4.3';
+const CURRENT_VERSION = '4.5';
 
 type Part = typeof initialParts[number];
 type PartSystem = typeof initialSystems[number];
@@ -979,6 +981,10 @@ export default function PartsPage() {
                 <PowerDriveSystemView />
               ) : selectedSystem === 'sys-007' ? (
                 <ChassisSystemView />
+              ) : selectedSystem === 'sys-008' ? (
+                <AutonomousDrivingSystemView />
+              ) : selectedSystem === 'sys-009' ? (
+                <HmiSystemView />
               ) : (
                 <>
                   <div className="p-6 border-b border-gray-200 flex justify-between items-center bg-gray-50">

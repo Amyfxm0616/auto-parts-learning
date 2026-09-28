@@ -1,0 +1,61 @@
+.page-assistant-session .assistant-session-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: var(--space-24);
+}
+
+.page-assistant-session .assistant-session-main,
+.page-assistant-session .assistant-session-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+}
+
+.page-assistant-session .message-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+}
+
+.page-assistant-session .message-item {
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  padding: var(--space-16);
+  background: var(--bg-surface-secondary);
+}
+
+.page-assistant-session .message-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-12);
+  margin-bottom: var(--space-8);
+}
+
+.page-assistant-session .message-meta span {
+  color: var(--text-muted);
+  font-size: var(--font-size-12);
+}
+
+.page-assistant-session .message-content {
+  color: var(--text-secondary);
+  line-height: var(--line-height-loose);
+}
+
+.page-assistant-session .message-user {
+  background: #f8fbff;
+}
+
+.page-assistant-session .message-assistant {
+  background: #f8fafc;
+}
+
+.page-assistant-session .message-system {
+  background: #fffaf0;
+}
+
+@media (max-width: 1279px) {
+  .page-assistant-session .assistant-session-layout {
+    grid-template-columns: 1fr;
+  }
+}

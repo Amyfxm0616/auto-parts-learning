@@ -1,107 +1,150 @@
+import '../app/styles/tokens.css';
+import '../app/styles/base.css';
+import '../app/styles/layout.css';
+import '../app/styles/utilities.css';
+
 import { useState } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import ThemeToggle from '../components/ThemeToggle';
 
 const NAV_ITEMS = [
-  { to: '/parts', label: '汽车零部件' },
-  { to: '/robot', label: '🤖 智能机器人' },
-  { to: '/materials', label: '材料库' },
-  { to: '/quiz', label: '练习测验' },
-  { to: '/notes', label: '我的笔记' },
-  { to: '/interior-3d', label: '🎮 3D内饰' },
+  { to: '/home', label: '首页', icon: '🏠' },
+  { to: '/apps', label: '应用中心', icon: '🧩' },
+  { to: '/assistant', label: 'AI助手', icon: '✨' },
+  { to: '/knowledge', label: '知识培训', icon: '📚' },
+  { to: '/projects', label: '项目管理', icon: '📁' },
+  { to: '/system-status', label: '系统状态', icon: '📡' },
 ];
 
 export default function ClientLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const desktopLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `inline-flex items-center px-3 pt-1 border-b-2 text-sm font-medium transition-colors ${
-      isActive
-        ? 'border-blue-500 text-blue-600 dark:text-blue-400 dark:border-blue-400'
-        : 'border-transparent text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:border-gray-300 dark:hover:border-gray-600'
-    }`;
-
-  const mobileLinkClass = ({ isActive }: { isActive: boolean }) =>
-    `block px-4 py-3 text-sm font-medium border-l-4 transition-colors ${
-      isActive
-        ? 'border-blue-500 bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-400'
-        : 'border-transparent text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white'
-    }`;
-
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
-      {/* Header */}
-      <nav className="bg-white dark:bg-gray-800 shadow-sm transition-colors">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            {/* Logo + Desktop Nav */}
-            <div className="flex">
-              <Link to="/" className="flex items-center px-3 text-xl font-bold text-blue-600 dark:text-blue-400">
-                汽车及智能穿戴材料学习平台
-              </Link>
-              <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-                {NAV_ITEMS.map((item) => (
-                  <NavLink key={item.to} to={item.to} className={desktopLinkClass}>
-                    {item.label}
-                  </NavLink>
-                ))}
-              </div>
+    <div className="app-shell">
+      <header className="topbar">
+        <div className="topbar-left">
+          <Link to="/home" className="brand">
+            <div className="brand-mark">NM</div>
+            <div className="brand-text">
+              <strong>非金属 AI 工作台</strong>
+              <span>Materials AI Workbench</span>
             </div>
+          </Link>
+        </div>
 
-            {/* Right side: theme toggle + hamburger */}
-            <div className="flex items-center gap-3">
-              <ThemeToggle />
-              {/* Hamburger button - only on mobile */}
-              <button
-                className="sm:hidden p-2 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none"
-                onClick={() => setMenuOpen((o) => !o)}
-                aria-label="菜单"
-              >
-                {menuOpen ? (
-                  /* X icon */
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                ) : (
-                  /* Hamburger icon */
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                  </svg>
-                )}
-              </button>
-            </div>
+        <div className="topbar-center">
+          <div className="topbar-search">
+            <input className="input" placeholder="搜索系统、知识、项目" />
+          </div>
+          <div className="topbar-assistant-entry">
+            <input
+              className="input"
+              placeholder="问 AI：例如 帮我推荐门板骨架材料"
+            />
+            <Link className="btn btn-primary" to="/assistant">
+              进入助手
+            </Link>
           </div>
         </div>
 
-        {/* Mobile dropdown menu */}
-        {menuOpen && (
-          <div className="sm:hidden border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <div className="topbar-right">
+          <button className="icon-btn" title="通知">
+            🔔
+          </button>
+          <ThemeToggle />
+          <button
+            className="icon-btn"
+            onClick={() => setMenuOpen((o) => !o)}
+            aria-label="菜单"
+          >
+            ☰
+          </button>
+        </div>
+      </header>
+
+      {menuOpen && (
+        <div style={{ borderBottom: '1px solid var(--border-default)', background: 'var(--bg-surface)', padding: '12px 16px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {NAV_ITEMS.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
-                className={mobileLinkClass}
+                className={({ isActive }) =>
+                  isActive ? 'sidebar-link is-active' : 'sidebar-link'
+                }
                 onClick={() => setMenuOpen(false)}
               >
-                {item.label}
+                <span className="sidebar-link-icon">{item.icon}</span>
+                <span className="sidebar-link-text">{item.label}</span>
               </NavLink>
             ))}
           </div>
-        )}
-      </nav>
-
-      {/* Content */}
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <Outlet />
-      </main>
-
-      {/* Footer */}
-      <footer className="bg-gray-100 dark:bg-gray-800 py-8 mt-12 transition-colors">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <p className="text-gray-600 dark:text-gray-400 text-sm">汽车及智能穿戴材料学习平台 © 2026</p>
-          <p className="text-gray-500 dark:text-gray-500 text-xs mt-2">专注于汽车零部件材料教学</p>
         </div>
-      </footer>
+      )}
+
+      <div className="app-body">
+        <aside className="left-sidebar">
+          <div className="sidebar-section">
+            <div className="sidebar-section-title">主导航</div>
+            <nav className="sidebar-nav">
+              {NAV_ITEMS.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  className={({ isActive }) =>
+                    isActive ? 'sidebar-link is-active' : 'sidebar-link'
+                  }
+                >
+                  <span className="sidebar-link-icon">{item.icon}</span>
+                  <span className="sidebar-link-text">{item.label}</span>
+                </NavLink>
+              ))}
+            </nav>
+          </div>
+
+          <div className="sidebar-footer-card">
+            <div className="sidebar-footer-title">高频能力</div>
+            <div className="sidebar-chip-list">
+              <Link to="/apps/material-recommend" className="info-chip">
+                智能选材
+              </Link>
+              <Link to="/apps/weight-cost-analysis" className="info-chip">
+                减重降本
+              </Link>
+              <Link to="/apps/rubber-db" className="info-chip">
+                橡胶数据库
+              </Link>
+            </div>
+          </div>
+        </aside>
+
+        <main className="main-workspace">
+          <Outlet />
+        </main>
+
+        <aside className="right-rail">
+          <section className="rail-card">
+            <h3>推荐操作</h3>
+            <div className="rail-actions">
+              <Link className="btn btn-secondary" to="/assistant">
+                进入 AI 助手
+              </Link>
+              <Link className="btn btn-secondary" to="/apps">
+                查看全部应用
+              </Link>
+            </div>
+          </section>
+
+          <section className="rail-card">
+            <h3>平台状态</h3>
+            <ul className="rail-list">
+              <li>已接入项目：14</li>
+              <li>核心能力：5</li>
+              <li>当前阶段：原型落地</li>
+            </ul>
+          </section>
+        </aside>
+      </div>
     </div>
   );
 }
