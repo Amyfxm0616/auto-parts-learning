@@ -11,11 +11,13 @@ import KnowledgePage from '../../pages/knowledge/KnowledgePage';
 import ProjectsPage from '../../pages/projects/ProjectsPage';
 import ProjectDetailPage from '../../pages/projects/ProjectDetailPage';
 import SystemStatusPage from '../../pages/system-status/SystemStatusPage';
+import RouteErrorPage from './RouteErrorPage';
 
 export const router = createBrowserRouter([
   {
     path: '/',
     element: <ClientLayout />,
+    errorElement: <RouteErrorPage />,
     children: [
       { index: true, element: <Navigate to="/home" replace /> },
       { path: 'home', element: <HomePage /> },
